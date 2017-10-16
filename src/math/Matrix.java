@@ -1,5 +1,20 @@
 package math;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+
+import javax.imageio.ImageIO;
+
 public class Matrix {
 	public double[][] v;
 	public int width;
@@ -11,13 +26,24 @@ public class Matrix {
 		this.height = height;
 	}
 	
+	public Matrix(Matrix x) {
+		width = x.width;
+		height = x.height;
+		v = new double[height][width];
+		for(int i = 0 ; i < height ;i++) {
+			for(int j = 0 ; j < width ; j++) {
+				v[i][j] = x.v[i][j];
+			}
+		}
+	}
+	
 	public Matrix mult(Matrix b) {
 		return Matrix.mult(this, b);
 	}
 	
 	public static Matrix mult(Matrix a, Matrix b) {
 		if(b.height != a.width) {
-			throw new RuntimeException("Incompatible shape with ("+a.width+", "+a.height+") and ("+b.width+", "+b.height+")");
+			throw new RuntimeException("Incompatible shape with ("+a.width+", "+a.height+") and ("+b.width+", "+b.height+") "+a.width+" != "+b.height);
 		}
 		Matrix res = new Matrix(b.width, a.height);
 		
@@ -33,6 +59,116 @@ public class Matrix {
 		}
 		return res;
 	}
+	
+	public Matrix mult_transposed(Matrix b) {
+		return Matrix.mult_transposed(this, b);
+	}
+	
+	public static Matrix mult_transposed(Matrix a, Matrix b) {
+		if(b.height != a.width) {
+			throw new RuntimeException("Incompatible shape with ("+a.width+", "+a.height+") and ("+b.width+", "+b.height+") "+a.width+" != "+b.height);
+		}
+		Matrix res = new Matrix(a.height, b.width);
+		
+		double sum;
+		for(int j = 0 ; j < a.height ; j++) {
+			for(int i = 0 ; i < b.width; i++) {
+				sum = 0;
+				for(int k = 0 ; k < a.width ; k++) {
+					sum += a.v[j][k]*b.v[k][i];
+				}
+				res.v[i][j] = sum;
+			}
+		}
+		return res;
+	}
+	
+	public static int cores = 8;
+	
+	private static double calculate_element(Matrix a, Matrix b, double j_par, double i_par) {
+		double sum = 0;
+		int j = (int)j_par;
+		int i = (int)i_par;
+		for(int k = 0 ; k < a.width ; k++) {
+			sum += a.v[j][k]*b.v[k][i];
+		}
+		return sum;
+	}
+	
+	public static double norm(Matrix a) {
+		double n = 0;
+		for(double[] b : a.v) {
+			for(double c : b) {
+				n += c*c;
+			}
+		}
+		return Math.sqrt(n);
+	}
+	
+	public Matrix parralel_mult(Matrix b) {
+		return Matrix.parralel_mult(this, b);
+	}
+	
+	public static Matrix parralel_mult(Matrix A, Matrix B) {
+		if(B.height != A.width) {
+			throw new RuntimeException("Incompatible shape with "+A.shape()+" and "+B.shape()+" "+A.width+" != "+B.height);
+		}
+		int threadNumber = 4;
+		Matrix C = new Matrix(B.width, A.height);
+		ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
+		List<Future<Matrix>> list = new ArrayList<Future<Matrix>>();
+
+		int part = A.height / threadNumber;
+		if (part < 1) {
+			part = 1;
+		}
+		for (int i = 0; i < A.height ; i += part) {
+			Callable<Matrix> worker = new LineMultiplier(A, B, i, i+part);
+			Future<Matrix> submit = executor.submit(worker);
+			list.add(submit);
+		}
+
+		// now retrieve the result
+		int start = 0;
+		Matrix CF;
+		for (Future<Matrix> future : list) {
+			try {
+				CF = future.get();
+				for (int i=start; i < start+part; i += 1) {
+					C.v[i] = CF.v[i-start];
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+			start+=part;
+		}
+		executor.shutdown();
+
+		return C;
+	}	
+
+	public Matrix parralel_mult_transposed(Matrix b) {
+		return Matrix.parralel_mult_transposed(this, b);
+	}
+	
+	public static Matrix parralel_mult_transposed(Matrix a, Matrix b) {
+		if(b.height != a.width) {
+			throw new RuntimeException("Incompatible shape with ("+a.width+", "+a.height+") and ("+b.width+", "+b.height+") "+a.width+" != "+b.height);
+		}
+
+		double[] js, is;
+		js = IntStream.range(0, a.height).mapToDouble(i -> i).toArray();
+		is = IntStream.range(0, b.width).mapToDouble(i -> i).toArray();
+		double[] datas = DoubleStream.of(js).parallel().flatMap(j -> DoubleStream.of(is).parallel().map(i -> calculate_element(a, b, j, i))).parallel().toArray();
+		Matrix res = new Matrix(a.height, b.width);
+		for(int i = 0 ; i < datas.length ; i++) {
+			res.v[i%b.width][i/b.width] = datas[i];
+		}
+		return res;
+	}
+	
 	
 	public Vector dot(Vector v) {
 		return Matrix.dot(this, v);
@@ -54,7 +190,7 @@ public class Matrix {
 		return res;
 	}
 	
-	public Vector getColumn(int i) {
+	public Vector get_column(int i) {
 		if(i < 0 || i >= this.width) {
 			throw new RuntimeException(i+" not valid column id");
 		}
@@ -65,7 +201,7 @@ public class Matrix {
 		return m;
 	} 
 	
-	public Vector getRow(int j) {
+	public Vector get_row(int j) {
 		if(j < 0 || j >= this.height) {
 			throw new RuntimeException(j+" not valid row id");
 		}
@@ -74,6 +210,26 @@ public class Matrix {
 			m.v[k] = this.v[j][k];
 		}
 		return m;
+	} 
+	
+	public Matrix set_column(int i, Vector v) {
+		if(i < 0 || i >= this.width || v.length != this.height) {
+			throw new RuntimeException(i+" not valid column id");
+		}
+		for(int k = 0 ; k < this.height ; k++) {
+			this.v[k][i] = v.v[k];
+		}
+		return this;
+	} 
+	
+	public Matrix set_row(int j, Vector v) {
+		if(j < 0 || j >= this.height || v.length != this.width) {
+			throw new RuntimeException(j+" not valid row id");
+		}
+		for(int k = 0 ; k < this.width ; k++) {
+			this.v[j][k] = v.v[k];
+		}
+		return this;
 	} 
 	
 	public Matrix hadamart(Matrix b) {
@@ -89,6 +245,24 @@ public class Matrix {
 		for(int j = 0 ; j < res.height ; j++) {
 			for(int i = 0 ; i < res.width ; i++) {
 				res.v[j][i] = a.v[j][i]*b.v[j][i];
+			}
+		}
+		return res;
+	}
+	
+	public Matrix hadamart_div(Matrix b) {
+		return Matrix.hadamart(this, b);
+	}
+	
+	public static Matrix hadamart_div(Matrix a, Matrix b) {
+		if(b.height != a.height || b.width != a.width) {
+			throw new RuntimeException("Incompatible shape with ("+a.width+", "+a.height+") and ("+b.width+", "+b.height+")");
+		}
+		Matrix res = new Matrix(a.width, a.height);
+		
+		for(int j = 0 ; j < res.height ; j++) {
+			for(int i = 0 ; i < res.width ; i++) {
+				res.v[j][i] = a.v[j][i]/b.v[j][i];
 			}
 		}
 		return res;
@@ -111,6 +285,10 @@ public class Matrix {
 		}
 		
 		return res;
+	}
+	
+	public Matrix T() {
+		return Matrix.transpose(this);
 	}
 	
 	public Matrix transpose() {
@@ -185,7 +363,7 @@ public class Matrix {
 		return min;
 	}
 
-	public void addInPlace(Matrix res) {
+	public Matrix addInPlace(Matrix res) {
 		if(height != res.height || width != res.width) {
 			throw new RuntimeException("Incompatible shape with ("+width+", "+height+") and ("+res.width+", "+res.height+")");
 		}
@@ -194,10 +372,113 @@ public class Matrix {
 				v[j][i] = v[j][i]+res.v[j][i];
 			}
 		}
+		return this;
+	}
+	
+	public Vector shape() {
+		Vector v = new Vector(2);
+		v.v[0] = this.width;
+		v.v[1] = this.height;
+		return v;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof Matrix) {
+			Matrix t = (Matrix)obj;
+			if(t.width == this.width && t.height == this.height) {
+				double epsilon = 1e-10;
+				for(int i = 0 ; i < height ; i++) {
+					for (int j = 0; j < width; j++) {
+						if(Math.abs(t.v[i][j]-this.v[i][j]) > epsilon) {
+							return false;
+						}
+					}
+				}
+				return true;
+			}
+			return false;
+		}
+		return false;
+	}
+	public BufferedImage visualize(String name, int dimension, boolean hasBiasOnZero, boolean write) {
+		BufferedImage bf;
+		final int scale = 4;
+		bf = new BufferedImage(dimension*scale*height, dimension*scale, BufferedImage.TYPE_INT_ARGB);
+		for(int i = 0 ; i < height ; i++) {
+			double max = this.get_row(i).max();
+			double min = this.get_row(i).min();
+			for(int j = 0 ; j < dimension*scale ; j++) {
+				for(int k = 0 ; k < dimension*scale ; k++) {
+					int indice = dimension*(j/scale)+k/scale+((hasBiasOnZero)?1:0);
+					
+					int v = (int) (512*(this.v[i][indice]-min)/(max-min));
+					v -= 256;
+					int a=0, b=0;
+					if(v < 0)
+						a = -v;
+					else
+						b = v;
+					
+					a *= 1.5;
+					b *= 1.5;
+					if(a > 255)
+						a = 255;
+					if(b > 255)
+						b = 255;
+					int rgb = (0xFF << 24) + (0 << 8) + (a << 16)+b;
+					bf.setRGB(i*dimension*scale+k, j, rgb);
+				}
+			}
+		}
+		if(write) {
+			try {
+				ImageIO.write(bf, "png", new File(name+".png"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return bf;
+	}
+	
+	public void print_values() {
+		for(int i = 0 ; i < height ; i++) {
+			for (int j = 0; j < width; j++) {
+				double ds = v[i][j];
+				System.out.print((int)(ds*1000)/1000.0f+"\t");
+			}
+			System.out.println();
+		}
 	}
 	
 	public String toString() {
 		return "("+width+", "+height+")";
-		
+	}
+
+	public Vector sum(int axis) {
+		if(axis == 0) {
+			Vector v = new Vector(this.width);	
+			
+			for(int i = 0 ; i < this.width ; i++) {
+				double sum = 0;
+				for(int j = 0 ; j < this.height ; j++) {
+					sum += this.v[j][i];
+				}
+				v.v[i] = sum;
+			}
+			return v;
+		} 
+		if(axis == 1) {
+			Vector v = new Vector(this.height);
+			for(int i = 0 ; i < this.height ; i++) {
+				double sum = 0;
+				for(int j = 0 ; j < this.width ; j++) {
+					sum += this.v[i][j];
+				}
+				v.v[i] = sum;
+			}
+			return v;
+		}
+		throw new RuntimeException("Incorrect axis : "+axis);
 	}
 }
