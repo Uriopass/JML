@@ -12,7 +12,8 @@ import java.util.Locale;
 import javax.imageio.ImageIO;
 
 import image.ImageConverter;
-import math.Activations;
+import layers.AffineLayer;
+import layers.Layer;
 import math.Matrix;
 import math.Vector;
 import mnist.MnistReader;
@@ -21,24 +22,24 @@ public class ImagePerceptron {
 
 	/* Les donnees */
 	public static String path = "";
-	public static String labelDB = path + "t10k-labels.idx1-ubyte";
-	public static String imageDB = path + "t10k-images.idx3-ubyte";
+	public static String labelDB = path + "train-labels.idx1-ubyte";
+	public static String imageDB = path + "train-images.idx3-ubyte";
 
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
 	public final static int EPOCHMAX = 7;
 
-	public static final int N_t = 0;//50000;
+	public static final int N_t = 8000;
 
-	public static int T_t = 10000-1;
+	public static int T_t = 1000;
 
 	public static int N;
 	public static int T;
 
 	public static Matrix trainData, testData;
 	public static int[] trainRefs, testRefs;
-	public static int SIZEW = 0;
+	public static int SIZEW;
 
 	public static long seed = System.currentTimeMillis();
 
@@ -58,15 +59,15 @@ public class ImagePerceptron {
 		SIZEW = ImageConverter.image2VecteurReel(images.get(0)).length;
 
 		/* Creation des donnees */
-		trainData = new Matrix(SIZEW + 1, N);
+		trainData = new Matrix(SIZEW, N);
 		trainRefs = new int[N];
 		int cpt = 0;
 		/* Donnees d'apprentissage */
-		for (int l = 1; l <= N; l++) {
+		for (int l = 0; l < N; l++) {
 			cpt++;
-			trainData.v[l - 1] = ImageConverter.image2VecteurReel_withB(images.get(l));
+			trainData.v[l] = ImageConverter.image2VecteurReel_withB(images.get(l));
 			int label = refs[l];
-			trainRefs[l - 1] = label;
+			trainRefs[l] = label;
 		}
 
 		System.out.println("# Train set " + cpt + " images");
@@ -75,17 +76,17 @@ public class ImagePerceptron {
 		System.out.println("# Build test");
 		cpt = 0;
 		final int TOTAL = images.size();
-		if (N + T >= TOTAL) {
+		if (N + T > TOTAL) {
 			System.err.println("N+T ("+(N+T)+") > Total ("+TOTAL+")");
 			throw new RuntimeException();
 		}
-		testData = new Matrix(SIZEW + 1, T);
+		testData = new Matrix(SIZEW, T);
 		testRefs = new int[T];
-		for (int i = 1; i <= T; i++) {
+		for (int i = 0; i < T; i++) {
 			cpt++;
-			testData.v[i - 1] = ImageConverter.image2VecteurReel_withB(images.get(N + i));
+			testData.v[i] = ImageConverter.image2VecteurReel_withB(images.get(N + i));
 			int label = refs[N + i];
-			testRefs[i - 1] = label;
+			testRefs[i] = label;
 		}
 		System.out.println("# Test set " + cpt + " images");
 		trainData = trainData.transpose();
@@ -128,31 +129,31 @@ public class ImagePerceptron {
 			ints.add(i);
 			columns.add(testData.get_column(i));
 		}
-		Matrix batch = new Matrix(imnum, model.dims[0]);
+		Matrix batch = new Matrix(imnum, trainData.width);
 		for (int j = 0; j < imnum; j++) {
 			int indice = ints.get(j);
 			batch.set_column(j, columns.get(indice));
 			refs[j] = testRefs[indice];
 		}
 		int visu_layer = -1;
-		for (int i = 0; i < model.weights.length; i++) {
-			if (model.weights[i].height == 2) {
-				visu_layer = i + 1;
+		for (int i = 0; i < model.layers.size() ; i++) {
+			Layer l = model.layers.get(i);
+			if(l instanceof AffineLayer) {
+				if (((AffineLayer)l).weight.height == 2) {
+					visu_layer = i + 1;
+				}	
 			}
 		}
 
 		Matrix batch_cp = new Matrix(batch);
 		for (int k = 0; k < visu_layer; k++) {
-			batch = model.forward_layer(batch, k);
-			model.activation_forward(batch);
+			batch = model.layers.get(k).forward(batch, false);
 		}
 		Matrix final_pos = new Matrix(batch);
-		for (int k = visu_layer; k < model.dims.length - 2; k++) {
-			final_pos = model.forward_layer(final_pos, k);
-			model.activation_forward(final_pos);
+		for (int k = visu_layer; k < model.layers.size(); k++) {
+			final_pos = model.layers.get(k).forward(final_pos, false);
 		}
-		final_pos = model.forward_layer(final_pos, model.dims.length - 2);
-		Activations.softmax(final_pos, 1);
+		
 		double maxx = 1.1;//batch.getRow(0).max();
 		double minx = -1.1;//batch.getRow(0).min();
 		double maxy = 1.1;//batch.getRow(1).max();
@@ -166,13 +167,9 @@ public class ImagePerceptron {
 			}
 		}
 		//System.out.println(model.dims.length);
-		for (int k = visu_layer; k < model.dims.length - 2; k++) {
-			all = model.forward_layer(all, k);
-			model.activation_forward(all);
+		for (int k = visu_layer+1; k < model.layers.size(); k++) {
+			all = model.layers.get(k).forward(all, false);
 		}
-		all = model.forward_layer(all, model.dims.length - 2);
-		Activations.softmax(all, 1);
-
 		BufferedImage bf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
 		Vector dec1 = new Vector(2);
@@ -184,7 +181,7 @@ public class ImagePerceptron {
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
 				int indice = (i / cellsize) * widthcell + (j / cellsize);
-				int classe = model.argmax(all.get_column(indice));
+				int classe = all.get_column(indice).argmax();
 				double confidence = all.get_column(indice).v[classe];
 				//System.out.println(classe);
 				int[] color = colors[classe];
@@ -201,7 +198,7 @@ public class ImagePerceptron {
 			Vector init = batch_cp.get_column(i);
 			Vector arrival = batch.get_column(i);
 			Vector theend = final_pos.get_column(i);
-			int classe = model.argmax(theend);
+			int classe = theend.argmax();
 			double confidence = theend.v[classe];
 			boolean isGoodClasse = classe == refs[i];
 
@@ -254,21 +251,21 @@ public class ImagePerceptron {
 	 */
 	public static void main(String[] args) {
 		long time = System.currentTimeMillis();
-		model = new MultiLayerPerceptron();
 		
 		load_mnist_data();
+		
+		model = new MultiLayerPerceptron(new int[] { SIZEW, 800, 10 });
+		model.write_weights("test2");
+		model = new MultiLayerPerceptron("test2");
+		
 		System.out.println("# Seed : "+seed);
 		System.out.println("# Processors : "+Runtime.getRuntime().availableProcessors());
-
-		model.data = trainData;
-		model.refs = trainRefs;
-		model.dims = new int[] { SIZEW + 1, 800, 10 };
 
 		double[] trainAccuracy = new double[EPOCHMAX + 1];
 		double[] testAccuracy = new double[EPOCHMAX + 1];
 
 		//model.weight_init(seed);
-		model.load_weights("005percent");
+		//model.load_weights("005percent");
 		DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.getDefault());
 		otherSymbols.setDecimalSeparator('.');
 		otherSymbols.setGroupingSeparator(','); 
@@ -276,10 +273,10 @@ public class ImagePerceptron {
 		
 
 		System.out.println("# Initialization took "+(System.currentTimeMillis()-time)+" ms");
-		/*
+		
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
-			model.epoch_rmsprop();
+			model.epoch(trainData, trainRefs);
 			double rms = (System.currentTimeMillis()-t)/1000.;
 			t = System.currentTimeMillis();
 			testAccuracy[i] = 100-(100. * model.correct_count(testData, testRefs)) / T;
@@ -288,7 +285,7 @@ public class ImagePerceptron {
 			System.out.print(i+"\tTop 1 error rates (train, test) : "+df.format(trainAccuracy[i])+"% "+df.format(testAccuracy[i])+"%\t");
 			System.out.print("epoch time "+df.format(rms)+"s test time "+df.format(test_forward_t)+"s");
 			System.out.println(" ETA "+df.format((EPOCHMAX-i)*(test_forward_t+rms))+"s");
-			model.write_weights("temp");
+			//model.write_weights("temp");
 		}
 
 		for (double f : trainAccuracy) {
@@ -299,7 +296,6 @@ public class ImagePerceptron {
 			System.out.print(df.format(f) + ";");
 		}
 		System.out.println();
-	*/
 		System.out.print("MLPerceptron On the test set : ");
 		System.out.println((100f * model.correct_count(testData, testRefs)) / T);
 	}

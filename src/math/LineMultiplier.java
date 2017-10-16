@@ -22,7 +22,7 @@ public class LineMultiplier implements Callable<Matrix> {
 		for (int i = start; i < end; i++) {
 			int dec = i-start;
 			for (int k = 0; k < B.height; k++) {
-				double u = A.v[i][k];
+				double u =  A.v[i][k];
 				for(int j = 0;j < B.width;j++) {
 					C.v[dec][j] += u * B.v[k][j];
 				}

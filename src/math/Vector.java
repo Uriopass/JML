@@ -150,6 +150,18 @@ public class Vector {
 		return this;
 	}
 
+	public int argmax() {
+		int max = 0;
+		double maxV = v[0];
+		for (int i = 1; i < v.length; i++) {
+			if (v[i] > maxV) {
+				maxV = v[i];
+				max = i;
+			}
+		}
+		return max;
+	}
+	
 	public double max() {
 		double max = v[0];
 		for (int i = 1; i < v.length; i++)

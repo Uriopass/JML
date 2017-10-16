@@ -49,46 +49,24 @@ public class Perceptron {
 
 	// Calcule la correction à appliquer au poids en fonction d'un point
 	public static Matrix w_grad_vectorized(Matrix datapoints, int[] true_refs) {
-		//System.out.println("Datapoint shape : "+datapoints.shape());
-		//System.out.println("w shape : "+w.shape());
-		Matrix res = Activations.softmax(w.parralel_mult_transposed(datapoints), 0);
-		//System.out.println("res shape"+res.shape());
+		Matrix res = Activations.softmax(w.parralel_mult(datapoints).T(), 0);
+		
 		for(int i = 0 ; i < true_refs.length ; i++) {
 			res.v[i][true_refs[i]] -= 1;
 		}
 		
-		Matrix grad = datapoints.parralel_mult_transposed(res);
+		Matrix grad = datapoints.parralel_mult(res).T();
 		grad.addInPlace(w.scale(reg*datapoints.width)); // L2 loss
-		/*
-		for (int j = 0; j < num_classes; j++) {
-			for (int i = 0; i < DIM; i++) {
-				grad.v[j][i] = datapoint.v[i] * (res.v[j] - one_hot.v[j]) + w.v[j][i] * reg;
-			}
-		}
-		*/
 
 		return grad;
 	}
-
-	public static int argmax(Vector v) {
-		int max = 0;
-		double maxV = v.v[0];
-		for (int i = 1; i < v.length; i++) {
-			if (v.v[i] > maxV) {
-				maxV = v.v[i];
-				max = i;
-			}
-		}
-		return max;
-	}
-
 	// Compte le nombre de points classifiés correctement
 	public static int correct_count() {
 		int counter = 0;
 		Matrix res = Activations.softmax(w.parralel_mult(data), 1);
 		for (int i = 0; i < data.width; i++) {
 			Vector r = res.get_column(i);
-			if (argmax(r) == refs[i]) {
+			if (r.argmax() == refs[i]) {
 				counter++;
 			}
 		}

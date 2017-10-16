@@ -85,16 +85,6 @@ public class Matrix {
 	
 	public static int cores = 8;
 	
-	private static double calculate_element(Matrix a, Matrix b, double j_par, double i_par) {
-		double sum = 0;
-		int j = (int)j_par;
-		int i = (int)i_par;
-		for(int k = 0 ; k < a.width ; k++) {
-			sum += a.v[j][k]*b.v[k][i];
-		}
-		return sum;
-	}
-	
 	public static double norm(Matrix a) {
 		double n = 0;
 		for(double[] b : a.v) {
@@ -113,7 +103,8 @@ public class Matrix {
 		if(B.height != A.width) {
 			throw new RuntimeException("Incompatible shape with "+A.shape()+" and "+B.shape()+" "+A.width+" != "+B.height);
 		}
-		int threadNumber = 4;
+		//System.out.println("Multiplying"+A.shape()+" "+B.shape());
+		int threadNumber = Runtime.getRuntime().availableProcessors();
 		Matrix C = new Matrix(B.width, A.height);
 		ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
 		List<Future<Matrix>> list = new ArrayList<Future<Matrix>>();
@@ -134,7 +125,7 @@ public class Matrix {
 		for (Future<Matrix> future : list) {
 			try {
 				CF = future.get();
-				for (int i=start; i < start+part; i += 1) {
+				for (int i=start; i < start+part ; i += 1) {
 					C.v[i] = CF.v[i-start];
 				}
 			} catch (InterruptedException e) {
@@ -148,26 +139,6 @@ public class Matrix {
 
 		return C;
 	}	
-
-	public Matrix parralel_mult_transposed(Matrix b) {
-		return Matrix.parralel_mult_transposed(this, b);
-	}
-	
-	public static Matrix parralel_mult_transposed(Matrix a, Matrix b) {
-		if(b.height != a.width) {
-			throw new RuntimeException("Incompatible shape with ("+a.width+", "+a.height+") and ("+b.width+", "+b.height+") "+a.width+" != "+b.height);
-		}
-
-		double[] js, is;
-		js = IntStream.range(0, a.height).mapToDouble(i -> i).toArray();
-		is = IntStream.range(0, b.width).mapToDouble(i -> i).toArray();
-		double[] datas = DoubleStream.of(js).parallel().flatMap(j -> DoubleStream.of(is).parallel().map(i -> calculate_element(a, b, j, i))).parallel().toArray();
-		Matrix res = new Matrix(a.height, b.width);
-		for(int i = 0 ; i < datas.length ; i++) {
-			res.v[i%b.width][i/b.width] = datas[i];
-		}
-		return res;
-	}
 	
 	
 	public Vector dot(Vector v) {
