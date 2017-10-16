@@ -14,6 +14,7 @@ import javax.imageio.ImageIO;
 import image.ImageConverter;
 import layers.AffineLayer;
 import layers.Layer;
+import layers.RandomGenerator;
 import math.Matrix;
 import math.Vector;
 import mnist.MnistReader;
@@ -25,7 +26,7 @@ public class ImagePerceptron {
 	public static String labelDB = path + "train-labels.idx1-ubyte";
 	public static String imageDB = path + "train-images.idx3-ubyte";
 
-	public static MultiLayerPerceptron model;
+	public static FeedForwardNetwork model;
 
 	// Nombre d'epoque max
 	public final static int EPOCHMAX = 7;
@@ -91,25 +92,6 @@ public class ImagePerceptron {
 		System.out.println("# Test set " + cpt + " images");
 		trainData = trainData.transpose();
 		testData = testData.transpose();
-	}
-
-	public static void train_perceptron() {
-		Perceptron.DIM = SIZEW + 1;
-		Perceptron.num_classes = 10;
-		Perceptron.data = trainData;
-		Perceptron.refs = trainRefs;
-		Perceptron.xavier(seed);
-
-		for (int i = 0; i < 50; i++) {
-			Perceptron.epoch_vectorized();
-			System.out.println(i);
-		}
-		
-		System.out.print("Perceptron On the test set : ");
-		Perceptron.data = testData;
-		Perceptron.refs = testRefs;
-
-		System.out.println((100f * Perceptron.correct_count()) / T);
 	}
 	
 	public static void visualize_bottleneck(String name) {
@@ -251,12 +233,13 @@ public class ImagePerceptron {
 	 */
 	public static void main(String[] args) {
 		long time = System.currentTimeMillis();
+		RandomGenerator.init(seed);
 		
 		load_mnist_data();
 		
-		model = new MultiLayerPerceptron(new int[] { SIZEW, 800, 10 });
+		model = new FeedForwardNetwork(new int[] { SIZEW, 800, 10 });
 		model.write_weights("test2");
-		model = new MultiLayerPerceptron("test2");
+		model = new FeedForwardNetwork("test2");
 		
 		System.out.println("# Seed : "+seed);
 		System.out.println("# Processors : "+Runtime.getRuntime().availableProcessors());

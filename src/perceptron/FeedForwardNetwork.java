@@ -14,7 +14,7 @@ import layers.SoftmaxLayer;
 import math.Matrix;
 import math.Vector;
 
-public class MultiLayerPerceptron {
+public class FeedForwardNetwork {
 	public ArrayList<Layer> layers;
 	
 	public double learning_rate = 0.001;
@@ -42,14 +42,22 @@ public class MultiLayerPerceptron {
 		}
 	}
 	
-	public MultiLayerPerceptron(int[] dims) {
+	public FeedForwardNetwork(int[] dims) {
 		init_layers(dims, true);
+	}
+	
+	public FeedForwardNetwork() {
+		layers = new ArrayList<Layer>();
+	}
+	
+	public void addLayer(Layer l) {
+		layers.add(l);
 	}
 	
 	/**
 	 * @param name File name
 	 */
-	public MultiLayerPerceptron(String name) {
+	public FeedForwardNetwork(String name) {
 		try {
 			File f = new File(name + ".jml");
 			if (!f.exists()) {
