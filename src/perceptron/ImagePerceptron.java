@@ -14,8 +14,8 @@ import javax.imageio.ImageIO;
 import image.ImageConverter;
 import layers.AffineLayer;
 import layers.Layer;
-import layers.RandomGenerator;
 import math.Matrix;
+import math.RandomGenerator;
 import math.Vector;
 import mnist.MnistReader;
 
@@ -184,8 +184,8 @@ public class ImagePerceptron {
 			double confidence = theend.v[classe];
 			boolean isGoodClasse = classe == refs[i];
 
-			arrival.addInPlace(dec1);
-			arrival.scaleInPlace(scl);
+			arrival.add(dec1);
+			arrival.scale(scl);
 			for (int j = 0; j < 28; j++) {
 				for (int k = 0; k < 28; k++) {
 					int x = (int) (k - 14 + arrival.v[0]);

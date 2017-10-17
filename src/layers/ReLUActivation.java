@@ -28,7 +28,7 @@ public class ReLUActivation extends Layer {
 
 	@Override
 	public void apply_gradient() {};
-	s
+	
 	@Override
 	public String toString() {
 		return "TanhActivation()";

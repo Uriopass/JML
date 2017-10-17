@@ -1,6 +1,7 @@
 package layers;
 
 import math.Matrix;
+import math.RandomGenerator;
 import math.Vector;
 
 public class AffineLayer extends Layer {
@@ -70,9 +71,9 @@ public class AffineLayer extends Layer {
 	
 	@Override
 	public Matrix backward(Matrix dout) {
-		w_grad = dout.parralel_mult(cache.T()).scaleInPlace(1.0 / cache.width)
-				.addInPlace(weight.scale(regularization));
-		b_grad = dout.sum(1).scaleInPlace(1.0 / cache.width);
+		w_grad = dout.parralel_mult(cache.T()).scale(1.0 / cache.width)
+				.add(weight.scale(regularization));
+		b_grad = dout.sum(1).scale(1.0 / cache.width);
 		
 		if(!calculate_dout)
 			return null;

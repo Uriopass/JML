@@ -31,10 +31,6 @@ public class Vector {
 		return res;
 	}
 
-	public Vector add(Vector b) {
-		return add(this, b);
-	}
-
 	public static Vector add(Vector a, Vector b) {
 		if (a.length != b.length) {
 			throw new RuntimeException("Incompatible shape : (" + a.length + ") and (" + b.length + ")");
@@ -56,14 +52,6 @@ public class Vector {
 		return m;
 	}
 	
-	public Vector scale(Vector scalar) {
-		return Vector.scale(this, scalar);
-	}
-
-	public Vector scale(double scalar) {
-		return Vector.scale(this, scalar);
-	}
-
 	public static Vector scale(Vector a, Vector b) {
 		if (a.length != b.length) {
 			throw new RuntimeException("Incompatible shape : (" + a.length + ") and (" + b.length + ")");
@@ -83,7 +71,7 @@ public class Vector {
 		return res;
 	}
 
-	public Vector addInPlace(Vector b) {
+	public Vector add(Vector b) {
 		if (length != b.length) {
 			throw new RuntimeException("Incompatible shape : (" + length + ") and (" + b.length + ")");
 		}
@@ -94,25 +82,15 @@ public class Vector {
 	}
 	
 
-	public Vector addInPlace(double val) {
+	public Vector add(double val) {
 		for (int i = 0; i < length; i++) {
 			v[i] += val;
 		}
 		return this;
 	}
 
-	public Vector scaleInPlace(double scalar) {
-		for (int i = 0; i < length; i++) {
-			v[i] *= scalar;
-		}
-		return this;
-	}
 
-	public Vector power(double pow) {
-		return Vector.power(this, pow);
-	}
-
-	private static Vector power(Vector a, double pow) {
+	public static Vector power(Vector a, double pow) {
 		Vector res = new Vector(a.length);
 		if (pow == 0.5) {
 			for (int i = 0; i < a.length; i++) {
@@ -127,7 +105,7 @@ public class Vector {
 		return res;
 	}
 
-	public Vector powerInPlace(double pow) {
+	public Vector power(double pow) {
 		if (pow == 0.5) {
 			for (int i = 0; i < length; i++) {
 				v[i] = Math.sqrt(v[i]);
@@ -140,7 +118,7 @@ public class Vector {
 		return this;
 	}
 
-	public Vector scaleInPlace(Vector scalar) {
+	public Vector scale(Vector scalar) {
 		if (length != scalar.length) {
 			throw new RuntimeException("Incompatible shape : (" + length + ") and (" + scalar.length + ")");
 		}
@@ -150,6 +128,13 @@ public class Vector {
 		return this;
 	}
 
+	public Vector scale(double scalar) {
+		for (int i = 0; i < length; i++) {
+			v[i] *= scalar;
+		}
+		return this;
+	}
+	
 	public int argmax() {
 		int max = 0;
 		double maxV = v[0];

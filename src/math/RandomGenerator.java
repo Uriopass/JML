@@ -1,4 +1,4 @@
-package layers;
+package math;
 
 import java.util.Random;
 

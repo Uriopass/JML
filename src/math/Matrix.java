@@ -20,6 +20,10 @@ public class Matrix {
 	public int width;
 	public int height;
 	
+	public static final int AXIS_HEIGHT = 0;
+	public static final int AXIS_WIDTH = 1;
+	
+	
 	public Matrix(int width, int height) {
 		v = new double[height][width];
 		this.width = width;
@@ -85,7 +89,7 @@ public class Matrix {
 	
 	public static int cores = 8;
 	
-	public static double norm(Matrix a) {
+	public static double l2norm(Matrix a) {
 		double n = 0;
 		for(double[] b : a.v) {
 			for(double c : b) {
@@ -222,7 +226,7 @@ public class Matrix {
 	}
 	
 	public Matrix hadamart_div(Matrix b) {
-		return Matrix.hadamart(this, b);
+		return Matrix.hadamart_div(this, b);
 	}
 	
 	public static Matrix hadamart_div(Matrix a, Matrix b) {
@@ -239,10 +243,6 @@ public class Matrix {
 		return res;
 	}
 	
-	public Matrix add(Matrix b) {
-		return Matrix.add(this, b);
-	}
-	
 	public static Matrix add(Matrix a, Matrix b) {
 		if(b.height != a.height || b.width != a.width) {
 			throw new RuntimeException("Incompatible shape with ("+a.width+", "+a.height+") and ("+b.width+", "+b.height+")");
@@ -256,6 +256,19 @@ public class Matrix {
 		}
 		
 		return res;
+	}
+
+
+	public Matrix add(Matrix res) {
+		if(height != res.height || width != res.width) {
+			throw new RuntimeException("Incompatible shape with ("+width+", "+height+") and ("+res.width+", "+res.height+")");
+		}
+		for(int j = 0 ; j < res.height ; j++) {
+			for(int i = 0 ; i < res.width ; i++) {
+				v[j][i] = v[j][i]+res.v[j][i];
+			}
+		}
+		return this;
 	}
 	
 	public Matrix T() {
@@ -278,10 +291,6 @@ public class Matrix {
 		return res;
 	}
 	
-	public Matrix scale(double scalar) {
-		return Matrix.scale(this, scalar);
-	}
-	
 	public static Matrix scale(Matrix m, double scalar) {
 		Matrix res = new Matrix(m.width, m.height);
 		
@@ -294,7 +303,7 @@ public class Matrix {
 		return res;
 	}
 	
-	public Matrix scaleInPlace(double scalar) {
+	public Matrix scale(double scalar) {
 		for(int j = 0 ; j < this.height ; j++) {
 			for(int i = 0 ; i < this.width ; i++) {
 				this.v[j][i] *= scalar;
@@ -332,18 +341,6 @@ public class Matrix {
 		}
 		
 		return min;
-	}
-
-	public Matrix addInPlace(Matrix res) {
-		if(height != res.height || width != res.width) {
-			throw new RuntimeException("Incompatible shape with ("+width+", "+height+") and ("+res.width+", "+res.height+")");
-		}
-		for(int j = 0 ; j < res.height ; j++) {
-			for(int i = 0 ; i < res.width ; i++) {
-				v[j][i] = v[j][i]+res.v[j][i];
-			}
-		}
-		return this;
 	}
 	
 	public Vector shape() {
@@ -427,7 +424,7 @@ public class Matrix {
 	}
 
 	public Vector sum(int axis) {
-		if(axis == 0) {
+		if(axis == AXIS_HEIGHT) {
 			Vector v = new Vector(this.width);	
 			
 			for(int i = 0 ; i < this.width ; i++) {
@@ -439,7 +436,7 @@ public class Matrix {
 			}
 			return v;
 		} 
-		if(axis == 1) {
+		if(axis == AXIS_WIDTH) {
 			Vector v = new Vector(this.height);
 			for(int i = 0 ; i < this.height ; i++) {
 				double sum = 0;
@@ -449,6 +446,31 @@ public class Matrix {
 				v.v[i] = sum;
 			}
 			return v;
+		}
+		throw new RuntimeException("Incorrect axis : "+axis);
+	}
+
+	public Matrix add(Vector v, int axis) {
+		if(axis == AXIS_HEIGHT) {
+			if(v.length != this.width)
+				throw new RuntimeException("Incorrect vector with shape "+v.length);
+			for(int i = 0 ; i < this.height ; i++) {
+				for(int j = 0 ; j < this.width ; j++) {
+					this.v[i][j] += v.v[j];
+				}
+			}
+			return this;
+		} 
+		if(axis == AXIS_WIDTH) {
+			if(v.length != this.height)
+				throw new RuntimeException("Incorrect vector with shape "+v.length);
+			for(int i = 0 ; i < this.height ; i++) {
+				double val = v.v[i];
+				for(int j = 0 ; j < this.width ; j++) {
+					this.v[i][j] += val;
+				}
+			}
+			return this;
 		}
 		throw new RuntimeException("Incorrect axis : "+axis);
 	}
