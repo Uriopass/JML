@@ -19,6 +19,10 @@ public class Parameters {
 		return values.get(key);
 	}
 	
+	public String set(String key, String value) {
+		return values.put(key, value);
+	}
+	
 	public String getAsString(String key, String default_value) {
 		if(values.containsKey(key))
 			return values.get(key);

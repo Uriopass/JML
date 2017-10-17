@@ -33,7 +33,7 @@ public class AffineLayer extends Layer {
 		b_acceleration = new Vector(fan_out);
 		
 		if(init) {
-			double bound = 40 * Math.sqrt(6f / (fan_in + fan_out));
+			double bound = Math.sqrt(6f / (fan_in));
 			
 			for (int i = 0; i < weight.height; i++) {
 				for (int j = 0; j < weight.width; j++) {
@@ -51,11 +51,15 @@ public class AffineLayer extends Layer {
 		}
 		
 		this.regularization = p.getAsDouble("reg", 0);
-		this.learning_rate = p.getAsDouble("lr", 0.01);
+		this.learning_rate = p.getAsDouble("lr", 0.001);
 		this.learning_rate_decay = p.getAsDouble("lrdecay", 1);
 		this.gamma = p.getAsDouble("gamma", 0.9);
 		this.epsilon = p.getAsDouble("epsilon", 1e-8);
 		this.calculate_dout = p.getAsString("dout", "true").equalsIgnoreCase("true");
+	}
+	
+	public void end_of_epoch() {
+		learning_rate *= learning_rate_decay;
 	}
 	
 	@Override
@@ -103,6 +107,6 @@ public class AffineLayer extends Layer {
 	
 	@Override
 	public String toString() {
-		return "AffineLayer("+fan_in+", "+fan_out+", lr="+learning_rate+", reg="+regularization+", lrdecay="+learning_rate_decay+")";
+		return "AffineLayer("+fan_in+", "+fan_out+", lr="+learning_rate+", reg="+regularization+", lrdecay="+learning_rate_decay+((calculate_dout)?"":", dout=false")+")";
 	}
 }

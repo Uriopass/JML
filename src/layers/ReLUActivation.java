@@ -11,7 +11,8 @@ public class ReLUActivation extends Layer {
 				in.v[i][j] = Math.max(0, in.v[i][j]);
 			}
 		}
-		cache = in;
+		if(training)
+			cache = in;
 		return in;
 	}
 

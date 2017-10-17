@@ -5,7 +5,7 @@ import math.Vector;
 
 public class BatchnormLayer extends Layer {
 	
-	final static double epsilon = 1e-5;
+	final static double epsilon = 1e-4;
 	final static double rms_gamma = 0.9;
 	Vector gamma, beta;
 	
@@ -20,9 +20,13 @@ public class BatchnormLayer extends Layer {
 	private Matrix va2;
 
 	public double learning_rate;
+	public double learning_rate_decay;
 	public double momentum;
 	
+	public int fan_in;
+	
 	public BatchnormLayer(int fan_in, Parameters param) {
+		this.fan_in = fan_in;
 		gamma = new Vector(fan_in);
 		beta = new Vector(fan_in);
 		gamma_acceleration = new Vector(fan_in);
@@ -32,8 +36,11 @@ public class BatchnormLayer extends Layer {
 		
 		for(int i = 0 ; i < gamma.length ; i++) {
 			gamma.v[i] = 1;
+			running_var.v[i] = 1;
 		}
-		learning_rate = param.getAsDouble("lr", 0.01);
+		learning_rate = param.getAsDouble("lr", 0.001);
+		learning_rate_decay = param.getAsDouble("lrdecay", 1);
+		momentum = param.getAsDouble("momentum", 0.9);
 	}
 	
 	@Override
@@ -67,7 +74,10 @@ public class BatchnormLayer extends Layer {
 			running_mean = running_mean.scale(momentum).add(new Vector(mu ).scale(1 - momentum));
 			running_var  = running_var .scale(momentum).add(new Vector(var).scale(1 - momentum));
 		} else {
-			in.add(new Vector(running_mean), axis)
+			in.add(running_mean, Matrix.AXIS_WIDTH);
+			in.scale(new Vector(running_var).power(0.5).add(epsilon).inverse(), Matrix.AXIS_WIDTH);
+			in.scale(gamma, Matrix.AXIS_WIDTH);
+			in.add(beta, Matrix.AXIS_WIDTH);
 		}
 		return in;
 	}
@@ -99,6 +109,10 @@ public class BatchnormLayer extends Layer {
 		dxmu.add(dmu, Matrix.AXIS_WIDTH);
 		return dxmu;
 	}
+	
+	public void end_of_epoch() {
+		learning_rate *= learning_rate_decay;
+	}
 
 	@Override
 	public void apply_gradient() {
@@ -123,8 +137,7 @@ public class BatchnormLayer extends Layer {
 	
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
-		return super.toString();
+		return "BatchnormLayer("+fan_in+")";
 	}
 
 }

@@ -17,22 +17,23 @@ import math.Vector;
 
 public class FeedForwardNetwork {
 	public ArrayList<Layer> layers;
-	
-	public double learning_rate = 0.005;
-	public double learning_rate_decay = 1;//0.794328235; // x^10 = 0.1
-	public double reg = 0;//0.0001;
-	
+
 	public int last_correct_count = 0;
+	public double last_average_loss = 0;
 	public final int mini_batch = 128;
 	
 	public void init_layers(int[] dims, boolean init) {
+		double learning_rate = 0.001;
+		double learning_rate_decay = 1;//0.794328235; // x^10 = 0.1
+		double reg = 0.00003;
+		
 		layers = new ArrayList<Layer>();
 		Parameters p = new Parameters("lr="+learning_rate, "lrdecay="+learning_rate_decay, "reg="+reg);
 		for(int i = 0 ; i < dims.length-1 ; i++) {
 			if(i == 0)
-				p.values.put("dout", "false");
+				p.set("dout", "false");
 			else
-				p.values.put("dout", "true");
+				p.set("dout", "true");
 			
 			layers.add(new AffineLayer(dims[i], dims[i+1], init, p));
 			layers.add(new BatchnormLayer(dims[i+1], p));
@@ -42,9 +43,7 @@ public class FeedForwardNetwork {
 		layers.add(new SoftmaxLayer());
 		
 		System.out.println("# Model created with following architecture : ");
-		for(Layer l : layers) {
-			System.out.println("# - "+l);
-		}
+		print_architecture();
 	}
 	
 	public FeedForwardNetwork(int...dims) {
@@ -55,7 +54,7 @@ public class FeedForwardNetwork {
 		layers = new ArrayList<Layer>();
 	}
 	
-	public void addLayer(Layer l) {
+	public void add(Layer l) {
 		layers.add(l);
 	}
 	
@@ -214,10 +213,28 @@ public class FeedForwardNetwork {
 				layers.get(j).apply_gradient();
 			}
 			last_correct_count += ((SoftmaxLayer) layers.get(layers.size()-1)).correct;
+			last_average_loss += ((SoftmaxLayer) layers.get(layers.size()-1)).loss;
+		}
+		last_average_loss /= data.width / mini_batch;
+		
+		for(Layer l : layers) {
+			if(l instanceof BatchnormLayer) {
+				((BatchnormLayer)l).end_of_epoch();
+			}
+			if(l instanceof AffineLayer) {
+				((AffineLayer)l).end_of_epoch();
+			}
 		}
 		System.out.print("] ");
 		//System.out.println(biases[0] + " " + biases[1]);
 	}
+	
+	public void print_architecture() {
+		for(Layer l : layers) {
+			System.out.println("# - "+l);
+		}
+	}
+	
 	/*
 	// Met à jour les poids en passant par toutes les données une fois
 	public void epoch() {

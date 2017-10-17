@@ -13,7 +13,12 @@ import javax.imageio.ImageIO;
 
 import image.ImageConverter;
 import layers.AffineLayer;
+import layers.BatchnormLayer;
+import layers.DropoutLayer;
 import layers.Layer;
+import layers.Parameters;
+import layers.SoftmaxLayer;
+import layers.TanhActivation;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
@@ -31,9 +36,9 @@ public class ImagePerceptron {
 	// Nombre d'epoque max
 	public final static int EPOCHMAX = 25;
 
-	public static final int N_t = 6000;
+	public static final int N_t = 50000;
 
-	public static int T_t = 1000;
+	public static int T_t = 5000;
 
 	public static int N;
 	public static int T;
@@ -239,7 +244,18 @@ public class ImagePerceptron {
 		
 		load_mnist_data();
 		
-		model = new FeedForwardNetwork(SIZEW, 150, 100, 150, 100, 150, 10);
+		model = new FeedForwardNetwork();
+		Parameters p = new Parameters("reg=0.00001", "lr=0.001");
+		p.set("dout", "false");
+		model.add(new AffineLayer(784, 800, true, p));
+		p.set("dout", "true");
+		model.add(new BatchnormLayer(800, p));
+		model.add(new TanhActivation());
+		model.add(new DropoutLayer(0.5));
+		model.add(new AffineLayer(800, 10, true, p));
+		model.add(new SoftmaxLayer());
+		System.out.println("# Model created with following architecture : ");
+		model.print_architecture();
 		
 		System.out.println("# Seed : "+seed);
 		System.out.println("# Processors : "+Runtime.getRuntime().availableProcessors());
@@ -254,19 +270,19 @@ public class ImagePerceptron {
 		DecimalFormat df = new DecimalFormat("#0.00", otherSymbols);
 		
 
-		visualize_bottleneck("fig0");
+		//visualize_bottleneck("fig0");
 		System.out.println("# Initialization took "+(System.currentTimeMillis()-time)+" ms");
 		
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
 			model.epoch(trainData, trainRefs);
-			visualize_bottleneck("fig"+i);
+			//visualize_bottleneck("fig"+i);
 			double rms = (System.currentTimeMillis()-t)/1000.;
 			t = System.currentTimeMillis();
 			testAccuracy[i] = 100-(100. * model.correct_count(testData, testRefs)) / T;
 			double test_forward_t = (System.currentTimeMillis()-t)/1000.;
 			trainAccuracy[i] = 100-(100. * model.last_correct_count) / N;
-			System.out.print(i+((i>=10)?" ":"  ")+"Top 1 error rates (train, test) : "+df.format(trainAccuracy[i])+"% "+df.format(testAccuracy[i])+"%\t");
+			System.out.print(i+((i>=10)?" ":"  ")+"Top 1 error rates (train, test) : "+df.format(trainAccuracy[i])+"% "+df.format(testAccuracy[i])+"% loss "+model.last_average_loss+"\t");
 			System.out.print("epoch time "+df.format(rms)+"s test time "+df.format(test_forward_t)+"s");
 			System.out.println(" ETA "+df.format((EPOCHMAX-i)*(test_forward_t+rms))+"s");
 			//model.write_weights("temp");

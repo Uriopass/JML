@@ -8,10 +8,11 @@ public class TanhActivation extends Layer {
 	public Matrix forward(Matrix in, boolean training) {
 		for(int i = 0 ; i < in.height ; i++) {
 			for(int j = 0 ; j < in.width ; j++) {
-				in.v[i][j] = Math.tanh(in.v[i][j]);
+				in.v[i][j] = 2 / (1 + Math.exp(-2*in.v[i][j])) - 1;
 			}
 		}
-		cache = in;
+		if(training)
+			cache = in;
 		return in;
 	}
 

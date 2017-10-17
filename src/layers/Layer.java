@@ -15,4 +15,8 @@ public abstract class Layer {
 	 */
 	public abstract Matrix backward(Matrix dout);
 	public abstract void apply_gradient();
+	/*
+	public abstract void write(PrintWriter pw);
+	public abstract void read (Scanner sc);
+	*/
 }

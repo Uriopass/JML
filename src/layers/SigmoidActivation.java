@@ -11,7 +11,8 @@ public class SigmoidActivation extends Layer {
 				in.v[i][j] = 1/(1+Math.exp(-in.v[i][j]));
 			}
 		}
-		cache = in;
+		if(training)
+			cache = in;
 		return in;
 	}
 
