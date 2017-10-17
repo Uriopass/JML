@@ -127,6 +127,13 @@ public class Vector {
 		}
 		return this;
 	}
+	
+	public Vector inverse() {
+		for (int i = 0; i < length; i++) {
+			v[i] = 1.0 / v[i];
+		}
+		return this;
+	}
 
 	public Vector scale(double scalar) {
 		for (int i = 0; i < length; i++) {

@@ -7,6 +7,7 @@ import math.Vector;
 public class AffineLayer extends Layer {
 	public Matrix weight;
 	public Vector bias;
+	
 	private Matrix cache;
 	private Matrix w_grad;
 	private Matrix w_acceleration;
@@ -32,13 +33,14 @@ public class AffineLayer extends Layer {
 		b_acceleration = new Vector(fan_out);
 		
 		if(init) {
-			double bound = 4 * Math.sqrt(6f / (fan_in + fan_out));
-			// System.out.println("mult:" + bound);
+			double bound = 40 * Math.sqrt(6f / (fan_in + fan_out));
+			
 			for (int i = 0; i < weight.height; i++) {
 				for (int j = 0; j < weight.width; j++) {
 					weight.v[i][j] = RandomGenerator.uniform(-bound, bound);
 				}
 			}
+			
 			for (int i = 0; i < bias.length; i++) {
 				bias.v[i] = 0;
 			}
@@ -61,18 +63,14 @@ public class AffineLayer extends Layer {
 		if(training)
 			cache = new Matrix(in);
 		Matrix next = weight.parralel_mult(in);
-		for (int i = 0; i < bias.length; i++) {
-			for (int j = 0; j < next.width; j++) {
-				next.v[i][j] += bias.v[i];
-			}
-		}
+		next.add(bias, Matrix.AXIS_WIDTH);
 		return next;
 	}
 	
 	@Override
 	public Matrix backward(Matrix dout) {
 		w_grad = dout.parralel_mult(cache.T()).scale(1.0 / cache.width)
-				.add(weight.scale(regularization));
+				.add(Matrix.scale(weight, regularization));
 		b_grad = dout.sum(1).scale(1.0 / cache.width);
 		
 		if(!calculate_dout)
@@ -82,7 +80,6 @@ public class AffineLayer extends Layer {
 	
 	@Override
 	public void apply_gradient() {
-		
 		for (int l = 0; l < w_acceleration.height; l++) {
 			for (int m = 0; m < w_acceleration.width; m++) {
 				w_acceleration.v[l][m] = gamma * w_acceleration.v[l][m]
@@ -97,10 +94,15 @@ public class AffineLayer extends Layer {
 			b_grad.v[l] *= -learning_rate / (Math.sqrt(epsilon + b_acceleration.v[l]));
 			bias.v[l] += b_grad.v[l];
 		}
+		/*
+		weight.add(w_grad.scale(-learning_rate));
+		bias.add(b_grad.scale(-learning_rate));
+		*/
+		learning_rate *= learning_rate_decay;
 	}
 	
 	@Override
 	public String toString() {
-		return "AffineLayer"+weight.shape();
+		return "AffineLayer("+fan_in+", "+fan_out+", lr="+learning_rate+", reg="+regularization+", lrdecay="+learning_rate_decay+")";
 	}
 }

@@ -29,9 +29,9 @@ public class ImagePerceptron {
 	public static FeedForwardNetwork model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 7;
+	public final static int EPOCHMAX = 25;
 
-	public static final int N_t = 8000;
+	public static final int N_t = 6000;
 
 	public static int T_t = 1000;
 
@@ -111,7 +111,8 @@ public class ImagePerceptron {
 			ints.add(i);
 			columns.add(testData.get_column(i));
 		}
-		Matrix batch = new Matrix(imnum, trainData.width);
+		Matrix batch = new Matrix(imnum, trainData.height);
+		
 		for (int j = 0; j < imnum; j++) {
 			int indice = ints.get(j);
 			batch.set_column(j, columns.get(indice));
@@ -122,11 +123,12 @@ public class ImagePerceptron {
 			Layer l = model.layers.get(i);
 			if(l instanceof AffineLayer) {
 				if (((AffineLayer)l).weight.height == 2) {
-					visu_layer = i + 1;
+					visu_layer = i + 2;
 				}	
 			}
 		}
-
+		if(visu_layer == -1)
+			return;
 		Matrix batch_cp = new Matrix(batch);
 		for (int k = 0; k < visu_layer; k++) {
 			batch = model.layers.get(k).forward(batch, false);
@@ -149,7 +151,7 @@ public class ImagePerceptron {
 			}
 		}
 		//System.out.println(model.dims.length);
-		for (int k = visu_layer+1; k < model.layers.size(); k++) {
+		for (int k = visu_layer; k < model.layers.size(); k++) {
 			all = model.layers.get(k).forward(all, false);
 		}
 		BufferedImage bf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -191,7 +193,7 @@ public class ImagePerceptron {
 					int x = (int) (k - 14 + arrival.v[0]);
 					int y = (int) (j - 14 + arrival.v[1]);
 					if (x >= 0 && x < width && y >= 0 && y < height) {
-						int indice = 1 + 28 * j + k;
+						int indice = 28 * j + k;
 						double color = init.v[indice];
 
 						int oldcolor = bf.getRGB(x, y);
@@ -237,9 +239,7 @@ public class ImagePerceptron {
 		
 		load_mnist_data();
 		
-		model = new FeedForwardNetwork(new int[] { SIZEW, 800, 10 });
-		model.write_weights("test2");
-		model = new FeedForwardNetwork("test2");
+		model = new FeedForwardNetwork(SIZEW, 150, 100, 150, 100, 150, 10);
 		
 		System.out.println("# Seed : "+seed);
 		System.out.println("# Processors : "+Runtime.getRuntime().availableProcessors());
@@ -247,25 +247,26 @@ public class ImagePerceptron {
 		double[] trainAccuracy = new double[EPOCHMAX + 1];
 		double[] testAccuracy = new double[EPOCHMAX + 1];
 
-		//model.weight_init(seed);
-		//model.load_weights("005percent");
+		model.write_weights("test");
 		DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.getDefault());
 		otherSymbols.setDecimalSeparator('.');
 		otherSymbols.setGroupingSeparator(','); 
 		DecimalFormat df = new DecimalFormat("#0.00", otherSymbols);
 		
 
+		visualize_bottleneck("fig0");
 		System.out.println("# Initialization took "+(System.currentTimeMillis()-time)+" ms");
 		
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
 			model.epoch(trainData, trainRefs);
+			visualize_bottleneck("fig"+i);
 			double rms = (System.currentTimeMillis()-t)/1000.;
 			t = System.currentTimeMillis();
 			testAccuracy[i] = 100-(100. * model.correct_count(testData, testRefs)) / T;
 			double test_forward_t = (System.currentTimeMillis()-t)/1000.;
 			trainAccuracy[i] = 100-(100. * model.last_correct_count) / N;
-			System.out.print(i+"\tTop 1 error rates (train, test) : "+df.format(trainAccuracy[i])+"% "+df.format(testAccuracy[i])+"%\t");
+			System.out.print(i+((i>=10)?" ":"  ")+"Top 1 error rates (train, test) : "+df.format(trainAccuracy[i])+"% "+df.format(testAccuracy[i])+"%\t");
 			System.out.print("epoch time "+df.format(rms)+"s test time "+df.format(test_forward_t)+"s");
 			System.out.println(" ETA "+df.format((EPOCHMAX-i)*(test_forward_t+rms))+"s");
 			//model.write_weights("temp");

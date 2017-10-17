@@ -7,19 +7,23 @@ import java.util.Collections;
 import java.util.Scanner;
 
 import layers.AffineLayer;
+import layers.BatchnormLayer;
 import layers.Layer;
 import layers.Parameters;
-import layers.SigmoidActivation;
 import layers.SoftmaxLayer;
+import layers.TanhActivation;
 import math.Matrix;
 import math.Vector;
 
 public class FeedForwardNetwork {
 	public ArrayList<Layer> layers;
 	
-	public double learning_rate = 0.001;
-	public double learning_rate_decay = 0.794328235; // x^10 = 0.1
-	public double reg = 0.0001;
+	public double learning_rate = 0.005;
+	public double learning_rate_decay = 1;//0.794328235; // x^10 = 0.1
+	public double reg = 0;//0.0001;
+	
+	public int last_correct_count = 0;
+	public final int mini_batch = 128;
 	
 	public void init_layers(int[] dims, boolean init) {
 		layers = new ArrayList<Layer>();
@@ -31,8 +35,9 @@ public class FeedForwardNetwork {
 				p.values.put("dout", "true");
 			
 			layers.add(new AffineLayer(dims[i], dims[i+1], init, p));
+			layers.add(new BatchnormLayer(dims[i+1], p));
 			if(i < dims.length-2)
-				layers.add(new SigmoidActivation());
+				layers.add(new TanhActivation());
 		}
 		layers.add(new SoftmaxLayer());
 		
@@ -42,7 +47,7 @@ public class FeedForwardNetwork {
 		}
 	}
 	
-	public FeedForwardNetwork(int[] dims) {
+	public FeedForwardNetwork(int...dims) {
 		init_layers(dims, true);
 	}
 	
@@ -166,15 +171,12 @@ public class FeedForwardNetwork {
 		return sf.correct;
 	}
 	
-	public int last_correct_count = 0;
 	public int global_counter = 1;
-	public final int mini_batch = 128;
 
 	public void epoch(Matrix data, int[] refs) {
 		last_correct_count = 0;
 		ArrayList<Integer> ints = new ArrayList<Integer>();
 		ArrayList<Vector> columns = new ArrayList<Vector>();
-		int[] refs_v = new int[mini_batch];
 		
 		for (int i = 0; i < data.width; i++) {
 			ints.add(i);
@@ -187,10 +189,13 @@ public class FeedForwardNetwork {
 		
 		for (int i = 0; i < data.width / mini_batch; i++) {
 			Matrix batch = new Matrix(mini_batch, data.height);
+			int[] refs_v = new int[mini_batch];
+			
 			if (i % tenth == 0)
 				System.out.print("=");
-			//ImagePerceptron.visualizeClusterImage("sigvisu4/fig"+(global_counter++));
 			
+			//ImagePerceptron.visualizeClusterImage("sigvisu4/fig"+(global_counter++));
+			//System.out.println("start");
 			for (int j = 0; j < mini_batch; j++) {
 				int indice = ints.get(i * mini_batch + j);
 				batch.set_column(j, columns.get(indice));
@@ -202,7 +207,8 @@ public class FeedForwardNetwork {
 			}
 			
 			Matrix dout = batch;
-			((SoftmaxLayer) layers.get(layers.size()-1)).feedrefs(refs_v);;
+			((SoftmaxLayer) layers.get(layers.size()-1)).feedrefs(refs_v);
+			
 			for(int j = layers.size()-1 ; j >= 0 ; j--) {
 				dout = layers.get(j).backward(dout);
 				layers.get(j).apply_gradient();

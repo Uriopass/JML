@@ -188,8 +188,11 @@ public class Matrix {
 	} 
 	
 	public Matrix set_column(int i, Vector v) {
-		if(i < 0 || i >= this.width || v.length != this.height) {
+		if(i < 0 || i >= this.width) {
 			throw new RuntimeException(i+" not valid column id");
+		}
+		if(v.length != this.height) {
+			throw new RuntimeException("Assigning vector of length "+v.length+" to height "+this.height);
 		}
 		for(int k = 0 ; k < this.height ; k++) {
 			this.v[k][i] = v.v[k];
@@ -265,10 +268,45 @@ public class Matrix {
 		}
 		for(int j = 0 ; j < res.height ; j++) {
 			for(int i = 0 ; i < res.width ; i++) {
-				v[j][i] = v[j][i]+res.v[j][i];
+				v[j][i] += res.v[j][i];
 			}
 		}
 		return this;
+	}
+	
+	public Matrix fill(double value) {
+		for(int i = 0 ; i < height ; i++) {
+			for(int j = 0 ; j < width ; j++) {
+				this.v[i][j] = value;
+			}
+		}
+		return this;
+	}
+
+
+	public Matrix add(Vector v, int axis) {
+		if(axis == AXIS_HEIGHT) {
+			if(v.length != this.width)
+				throw new RuntimeException("Incorrect vector with shape "+v.length);
+			for(int i = 0 ; i < this.height ; i++) {
+				for(int j = 0 ; j < this.width ; j++) {
+					this.v[i][j] += v.v[j];
+				}
+			}
+			return this;
+		} 
+		if(axis == AXIS_WIDTH) {
+			if(v.length != this.height)
+				throw new RuntimeException("Incorrect vector with shape "+v.length);
+			for(int i = 0 ; i < this.height ; i++) {
+				double val = v.v[i];
+				for(int j = 0 ; j < this.width ; j++) {
+					this.v[i][j] += val;
+				}
+			}
+			return this;
+		}
+		throw new RuntimeException("Incorrect axis : "+axis);
 	}
 	
 	public Matrix T() {
@@ -311,6 +349,31 @@ public class Matrix {
 		}
 		
 		return this;
+	}
+	
+	public Matrix scale(Vector v, int axis) {
+		if(axis == AXIS_HEIGHT) {
+			if(v.length != this.width)
+				throw new RuntimeException("Incorrect vector with shape "+v.length);
+			for(int i = 0 ; i < this.height ; i++) {
+				for(int j = 0 ; j < this.width ; j++) {
+					this.v[i][j] *= v.v[j];
+				}
+			}
+			return this;
+		} 
+		if(axis == AXIS_WIDTH) {
+			if(v.length != this.height)
+				throw new RuntimeException("Incorrect vector with shape "+v.length);
+			for(int i = 0 ; i < this.height ; i++) {
+				double val = v.v[i];
+				for(int j = 0 ; j < this.width ; j++) {
+					this.v[i][j] *= val;
+				}
+			}
+			return this;
+		}
+		throw new RuntimeException("Incorrect axis : "+axis);
 	}
 
 	public double max() {
@@ -446,31 +509,6 @@ public class Matrix {
 				v.v[i] = sum;
 			}
 			return v;
-		}
-		throw new RuntimeException("Incorrect axis : "+axis);
-	}
-
-	public Matrix add(Vector v, int axis) {
-		if(axis == AXIS_HEIGHT) {
-			if(v.length != this.width)
-				throw new RuntimeException("Incorrect vector with shape "+v.length);
-			for(int i = 0 ; i < this.height ; i++) {
-				for(int j = 0 ; j < this.width ; j++) {
-					this.v[i][j] += v.v[j];
-				}
-			}
-			return this;
-		} 
-		if(axis == AXIS_WIDTH) {
-			if(v.length != this.height)
-				throw new RuntimeException("Incorrect vector with shape "+v.length);
-			for(int i = 0 ; i < this.height ; i++) {
-				double val = v.v[i];
-				for(int j = 0 ; j < this.width ; j++) {
-					this.v[i][j] += val;
-				}
-			}
-			return this;
 		}
 		throw new RuntimeException("Incorrect axis : "+axis);
 	}
