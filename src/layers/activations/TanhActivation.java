@@ -1,4 +1,4 @@
-package layers;
+package layers.activations;
 
 public class TanhActivation extends ActivationLayer {
 	
@@ -8,7 +8,8 @@ public class TanhActivation extends ActivationLayer {
 	}
 	
 	@Override
-	public double activation_backward(double in) {
+	public double activation_backward() {
+		double in = get_after();
 		return 1 - in*in;
 	}
 	

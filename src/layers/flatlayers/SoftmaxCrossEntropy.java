@@ -1,9 +1,10 @@
-package layers;
+package layers.flatlayers;
 
+import layers.Layer;
 import math.Activations;
 import math.Matrix;
 
-public class SoftmaxCrossEntropy extends Layer {
+public class SoftmaxCrossEntropy implements Layer {
 	
 	int[] refs;
 	public int correct;

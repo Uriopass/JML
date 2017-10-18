@@ -1,4 +1,4 @@
-package layers;
+package layers.activations;
 
 public class SigmoidActivation extends ActivationLayer {
 	@Override
@@ -7,7 +7,8 @@ public class SigmoidActivation extends ActivationLayer {
 	}
 	
 	@Override
-	public double activation_backward(double in) {
+	public double activation_backward() {
+		double in = get_after();
 		return in*(1-in);
 	}
 	

@@ -1,9 +1,11 @@
-package layers;
+package layers.flatlayers;
 
+import layers.Layer;
+import layers.Parameters;
 import math.Matrix;
 import math.Vector;
 
-public class BatchnormLayer extends Layer {
+public class BatchnormLayer implements Layer {
 	
 	final static double epsilon = 1e-4;
 	final static double rms_gamma = 0.9;

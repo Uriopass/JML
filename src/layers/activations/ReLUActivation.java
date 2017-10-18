@@ -1,4 +1,4 @@
-package layers;
+package layers.activations;
 
 public class ReLUActivation extends ActivationLayer {
 	@Override
@@ -7,13 +7,12 @@ public class ReLUActivation extends ActivationLayer {
 	}
 
 	@Override
-	public double activation_backward(double in) {
-		int sig = (int) Math.signum(in);
-		return (sig+1)/2;
+	public double activation_backward() {
+		return Math.signum(get_after());
 	}
 	
 	@Override
 	public String toString() {
-		return "TanhActivation()";
+		return "ReLUActivation()";
 	}
 }

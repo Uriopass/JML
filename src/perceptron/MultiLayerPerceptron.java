@@ -6,12 +6,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
 
-import layers.AffineLayer;
-import layers.BatchnormLayer;
 import layers.Layer;
 import layers.Parameters;
-import layers.SoftmaxCrossEntropy;
-import layers.TanhActivation;
+import layers.activations.TanhActivation;
+import layers.flatlayers.AffineLayer;
+import layers.flatlayers.BatchnormLayer;
+import layers.flatlayers.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.Vector;
 

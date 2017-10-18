@@ -181,4 +181,10 @@ public class Vector {
 		return sb.toString();
 	}
 
+	public void fill(double value) {
+		for (int i = 0; i < v.length; i++) {
+			v[i] = value;
+		}
+	}
+
 }

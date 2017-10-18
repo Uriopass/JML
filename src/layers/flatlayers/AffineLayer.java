@@ -1,10 +1,13 @@
-package layers;
+package layers.flatlayers;
 
+import layers.Layer;
+import layers.Parameters;
+import math.Initialisations;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
 
-public class AffineLayer extends Layer {
+public class AffineLayer implements Layer {
 	public Matrix weight;
 	public Vector bias;
 	
@@ -33,13 +36,7 @@ public class AffineLayer extends Layer {
 		b_acceleration = new Vector(fan_out);
 		
 		if(init) {
-			double bound = Math.sqrt(6f / (fan_in));
-			
-			for (int i = 0; i < weight.height; i++) {
-				for (int j = 0; j < weight.width; j++) {
-					weight.v[i][j] = RandomGenerator.uniform(-bound, bound);
-				}
-			}
+			Initialisations.he_uniform(weight, fan_in, p.getAsDouble("init_multiplier", 1));
 			
 			for (int i = 0; i < bias.length; i++) {
 				bias.v[i] = 0;

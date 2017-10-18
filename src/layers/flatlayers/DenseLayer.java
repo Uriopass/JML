@@ -1,8 +1,14 @@
-package layers;
+package layers.flatlayers;
 
+import layers.Layer;
+import layers.Parameters;
+import layers.activations.ActivationLayer;
+import layers.activations.ReLUActivation;
+import layers.activations.SigmoidActivation;
+import layers.activations.TanhActivation;
 import math.Matrix;
 
-public class DenseLayer extends Layer {
+public class DenseLayer implements Layer {
 	AffineLayer al;
 	DropoutLayer dl;
 	BatchnormLayer bl;

@@ -8,10 +8,10 @@ import java.util.Collections;
 
 import javax.imageio.ImageIO;
 
-import layers.AffineLayer;
-import layers.BatchnormLayer;
 import layers.ImageEntropyLoss;
 import layers.Layer;
+import layers.flatlayers.AffineLayer;
+import layers.flatlayers.BatchnormLayer;
 import math.Matrix;
 import math.Vector;
 

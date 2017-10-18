@@ -334,6 +334,18 @@ public class Matrix {
 		return Matrix.transpose(this);
 	}
 	
+	public void zero_pad(int pad) {
+		width += 4;
+		height += 4;
+		double[][] new_v = new double[height][width];
+		for(int i = 0 ; i < v.length ; i++) {
+			for(int j = 0 ; j < v[i].length ; j++) {
+				new_v[i+pad][j+pad] = v[i][j];
+			}
+		}
+		v = new_v;
+	}
+	
 	public static Matrix transpose(Matrix m) {
 		Matrix res = new Matrix(m.height, m.width);
 		
