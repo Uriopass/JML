@@ -1,34 +1,16 @@
 package layers;
 
-import math.Matrix;
-
-public class ReLUActivation extends Layer {
-	Matrix cache;
+public class ReLUActivation extends ActivationLayer {
 	@Override
-	public Matrix forward(Matrix in, boolean training) {
-		for(int i = 0 ; i < in.height ; i++) {
-			for(int j = 0 ; j < in.width ; j++) {
-				in.v[i][j] = Math.max(0, in.v[i][j]);
-			}
-		}
-		if(training)
-			cache = in;
-		return in;
+	public double activation_forward(double in) {
+		return Math.max(0, in);
 	}
 
 	@Override
-	public Matrix backward(Matrix dout) {
-		for(int i = 0 ; i < dout.height ; i++) {
-			for(int j = 0 ; j < dout.width ; j++) {
-				int sig = (int) Math.signum(cache.v[i][j]);
-				dout.v[i][j] *= (sig+1)/2;
-			}
-		}
-		return dout;
+	public double activation_backward(double in) {
+		int sig = (int) Math.signum(in);
+		return (sig+1)/2;
 	}
-
-	@Override
-	public void apply_gradient() {};
 	
 	@Override
 	public String toString() {

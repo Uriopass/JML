@@ -3,7 +3,7 @@ package layers;
 import math.Activations;
 import math.Matrix;
 
-public class SoftmaxLayer extends Layer {
+public class SoftmaxCrossEntropy extends Layer {
 	
 	int[] refs;
 	public int correct;

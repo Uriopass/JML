@@ -99,6 +99,10 @@ public class Matrix {
 		return Math.sqrt(n);
 	}
 	
+	public double l2norm() {
+		return Matrix.l2norm(this);
+	}
+	
 	public Matrix parralel_mult(Matrix b) {
 		return Matrix.parralel_mult(this, b);
 	}
@@ -109,6 +113,8 @@ public class Matrix {
 		}
 		//System.out.println("Multiplying"+A.shape()+" "+B.shape());
 		int threadNumber = Runtime.getRuntime().availableProcessors();
+		while(A.height%threadNumber != 0)
+			threadNumber--;
 		Matrix C = new Matrix(B.width, A.height);
 		ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
 		List<Future<Matrix>> list = new ArrayList<Future<Matrix>>();
@@ -117,6 +123,8 @@ public class Matrix {
 		if (part < 1) {
 			part = 1;
 		}
+		
+		// System.out.println(A.height+" "+part);
 		for (int i = 0; i < A.height ; i += part) {
 			Callable<Matrix> worker = new LineMultiplier(A, B, i, i+part);
 			Future<Matrix> submit = executor.submit(worker);
@@ -269,6 +277,15 @@ public class Matrix {
 		for(int j = 0 ; j < res.height ; j++) {
 			for(int i = 0 ; i < res.width ; i++) {
 				v[j][i] += res.v[j][i];
+			}
+		}
+		return this;
+	}
+	
+	public Matrix add(double value) {
+		for(int i = 0 ; i < height ; i++) {
+			for(int j = 0 ; j < width ; j++) {
+				this.v[i][j] += value;
 			}
 		}
 		return this;
@@ -511,5 +528,15 @@ public class Matrix {
 			return v;
 		}
 		throw new RuntimeException("Incorrect axis : "+axis);
+	}
+
+	public double sum() {
+		double sum = 0;
+		for(int i = 0 ; i < this.height ; i++) {
+			for(int j = 0 ; j < this.width ; j++) {
+				sum += this.v[i][j];
+			}
+		}
+		return sum;
 	}
 }

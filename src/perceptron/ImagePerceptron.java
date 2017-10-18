@@ -14,10 +14,15 @@ import javax.imageio.ImageIO;
 import image.ImageConverter;
 import layers.AffineLayer;
 import layers.BatchnormLayer;
+import layers.DenseLayer;
 import layers.DropoutLayer;
+import layers.ImageEntropyLoss;
+import layers.ImageQuadraticLoss;
 import layers.Layer;
 import layers.Parameters;
-import layers.SoftmaxLayer;
+import layers.ReLUActivation;
+import layers.SigmoidActivation;
+import layers.SoftmaxCrossEntropy;
 import layers.TanhActivation;
 import math.Matrix;
 import math.RandomGenerator;
@@ -31,14 +36,14 @@ public class ImagePerceptron {
 	public static String labelDB = path + "train-labels.idx1-ubyte";
 	public static String imageDB = path + "train-images.idx3-ubyte";
 
-	public static FeedForwardNetwork model;
+	public static AutoEncoder model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 25;
+	public final static int EPOCHMAX = 50;
 
 	public static final int N_t = 50000;
 
-	public static int T_t = 5000;
+	public static int T_t = 1000;
 
 	public static int N;
 	public static int T;
@@ -53,8 +58,8 @@ public class ImagePerceptron {
 			{ 255, 0, 255 }, { 192, 255, 32 }, { 0, 0, 255 }, { 255, 255, 255 }, { 64, 128, 255 }, { 255, 128, 64 }, };
 
 	public static void load_mnist_data() {
-		N = N_t;// - (N_t % model.mini_batch);
-		T = T_t;// - (T_t % model.mini_batch);
+		N = N_t - (N_t % model.mini_batch);
+		T = T_t - (T_t % model.mini_batch);
 
 		System.out.println("# Loading the database !");
 		/* Lecteur d'image */
@@ -108,6 +113,7 @@ public class ImagePerceptron {
 		width = width - width % cellsize;
 		int widthcell = width / cellsize;
 		int heightcell = height / cellsize;
+		int bottleneckdim = 3;
 
 		ArrayList<Integer> ints = new ArrayList<Integer>();
 		ArrayList<Vector> columns = new ArrayList<Vector>();
@@ -127,7 +133,7 @@ public class ImagePerceptron {
 		for (int i = 0; i < model.layers.size() ; i++) {
 			Layer l = model.layers.get(i);
 			if(l instanceof AffineLayer) {
-				if (((AffineLayer)l).weight.height == 2) {
+				if (((AffineLayer)l).weight.height == bottleneckdim) {
 					visu_layer = i + 2;
 				}	
 			}
@@ -138,16 +144,16 @@ public class ImagePerceptron {
 		for (int k = 0; k < visu_layer; k++) {
 			batch = model.layers.get(k).forward(batch, false);
 		}
+		/*
 		Matrix final_pos = new Matrix(batch);
 		for (int k = visu_layer; k < model.layers.size(); k++) {
 			final_pos = model.layers.get(k).forward(final_pos, false);
 		}
+		*/
 		
-		double maxx = 1.1;//batch.getRow(0).max();
-		double minx = -1.1;//batch.getRow(0).min();
-		double maxy = 1.1;//batch.getRow(1).max();
-		double miny = -1.1;//batch.getRow(1).min();
-
+		double max = 1.1;//batch.getRow(0).max();
+		double min = -1.1;//batch.getRow(0).min();
+		/*
 		Matrix all = new Matrix(widthcell * heightcell, 2);
 		for (int i = 0; i < heightcell; i++) {
 			for (int j = 0; j < widthcell; j++) {
@@ -159,75 +165,157 @@ public class ImagePerceptron {
 		for (int k = visu_layer; k < model.layers.size(); k++) {
 			all = model.layers.get(k).forward(all, false);
 		}
-		BufferedImage bf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-
-		Vector dec1 = new Vector(2);
-		dec1.v[0] = -minx;
-		dec1.v[1] = -miny;
-		Vector scl = new Vector(2);
-		scl.v[0] = (width) / (maxx - minx);
-		scl.v[1] = (height) / (maxy - miny);
-		for (int i = 0; i < height; i++) {
-			for (int j = 0; j < width; j++) {
-				int indice = (i / cellsize) * widthcell + (j / cellsize);
-				int classe = all.get_column(indice).argmax();
-				double confidence = all.get_column(indice).v[classe];
-				//System.out.println(classe);
-				int[] color = colors[classe];
-				int r = (int) ((color[0] * confidence));
-				int g = (int) ((color[1] * confidence));
-				int b = (int) ((color[2] * confidence));
-				int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
-
-				bf.setRGB(j, i, rgb);
+		*/
+		BufferedImage bf;
+		if(bottleneckdim == 2) {
+			bf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+	
+			Vector dec1 = new Vector(bottleneckdim);
+			dec1.v[0] = -min;
+			dec1.v[1] = -min;
+			Vector scl = new Vector(bottleneckdim);
+			scl.v[0] = (width) / (max - min);
+			scl.v[1] = (height) / (max - min);
+			for (int i = 0; i < height; i++) {
+				for (int j = 0; j < width; j++) {
+					//int indice = (i / cellsize) * widthcell + (j / cellsize);
+					//int classe = all.get_column(indice).argmax();
+					//double confidence = all.get_column(indice).v[classe];
+					//System.out.println(classe);
+					//int[] color = colors[classe];
+					int r = 32;//(int) ((color[0] * confidence));
+					int g = 32;//(int) ((color[1] * confidence));
+					int b = 32;//(int) ((color[2] * confidence));
+					int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
+	
+					bf.setRGB(j, i, rgb);
+				}
 			}
-		}
-
-		for (int i = 0; i < imnum; i++) {
-			Vector init = batch_cp.get_column(i);
-			Vector arrival = batch.get_column(i);
-			Vector theend = final_pos.get_column(i);
-			int classe = theend.argmax();
-			double confidence = theend.v[classe];
-			boolean isGoodClasse = classe == refs[i];
-
-			arrival.add(dec1);
-			arrival.scale(scl);
-			for (int j = 0; j < 28; j++) {
-				for (int k = 0; k < 28; k++) {
-					int x = (int) (k - 14 + arrival.v[0]);
-					int y = (int) (j - 14 + arrival.v[1]);
-					if (x >= 0 && x < width && y >= 0 && y < height) {
-						int indice = 28 * j + k;
-						double color = init.v[indice];
-
-						int oldcolor = bf.getRGB(x, y);
-						float oldr = ((oldcolor >> 16) & 0xFF) / 255f;
-						float oldg = ((oldcolor >> 8) & 0xFF) / 255f;
-						float oldb = ((oldcolor >> 0) & 0xFF) / 255f;
-
-						double newr = 0;//color;
-						double newg = 0;//color;
-						double newb = 0;//color;
-						if (isGoodClasse) {
-							newg = 1;
-						} else {
-							newr = 1;
+			for (int i = 0; i < imnum; i++) {
+				Vector init = batch_cp.get_column(i);
+				Vector arrival = batch.get_column(i);
+				//Vector theend = final_pos.get_column(i);
+				int classe = testRefs[i];
+				//double confidence = theend.v[classe];
+				boolean isGoodClasse = classe == refs[i];
+	
+				arrival.add(dec1);
+				arrival.scale(scl);
+				for (int j = 0; j < 28; j++) {
+					for (int k = 0; k < 28; k++) {
+						int x = (int) (k - 14 + arrival.v[0]);
+						int y = (int) (j - 14 + arrival.v[1]);
+						if (x >= 0 && x < width && y >= 0 && y < height) {
+							int indice = 28 * j + k;
+							double color = init.v[indice];
+	
+							int oldcolor = bf.getRGB(x, y);
+							float oldr = ((oldcolor >> 16) & 0xFF) / 255f;
+							float oldg = ((oldcolor >> 8) & 0xFF) / 255f;
+							float oldb = ((oldcolor >> 0) & 0xFF) / 255f;
+	
+							double newr = colors[classe][0]/255.0;//color;
+							double newg = colors[classe][1]/255.0;//color;
+							double newb = colors[classe][2]/255.0;//color;
+							/*
+							if (isGoodClasse) {
+								newg = 1;
+							} else {
+								newr = 1;
+							}
+							*/
+	
+							double blend = color;//confidence * color;
+							int r = (int) ((blend * newr + (1 - blend) * oldr) * 255);
+							int g = (int) ((blend * newg + (1 - blend) * oldg) * 255);
+							int b = (int) ((blend * newb + (1 - blend) * oldb) * 255);
+							int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
+	
+							bf.setRGB(x, y, rgb);
+	
 						}
-
-						double blend = confidence * color;
-						int r = (int) ((blend * newr + (1 - blend) * oldr) * 255);
-						int g = (int) ((blend * newg + (1 - blend) * oldg) * 255);
-						int b = (int) ((blend * newb + (1 - blend) * oldb) * 255);
-						int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
-
-						bf.setRGB(x, y, rgb);
-
 					}
 				}
 			}
 		}
-
+		else if (bottleneckdim==3) {
+			bf = new BufferedImage(width, height*3, BufferedImage.TYPE_INT_ARGB);
+			
+			Vector dec1 = new Vector(2);
+			dec1.v[0] = -min;
+			dec1.v[1] = -min;
+			Vector scl = new Vector(2);
+			scl.v[0] = (width) / (max - min);
+			scl.v[1] = (height) / (max - min);
+			for (int i = 0; i < height*3; i++) {
+				for (int j = 0; j < width; j++) {
+					//int indice = (i / cellsize) * widthcell + (j / cellsize);
+					//int classe = all.get_column(indice).argmax();
+					//double confidence = all.get_column(indice).v[classe];
+					//System.out.println(classe);
+					//int[] color = colors[classe];
+					int r = 32;//(int) ((color[0] * confidence));
+					int g = 32;//(int) ((color[1] * confidence));
+					int b = 32;//(int) ((color[2] * confidence));
+					int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
+	
+					bf.setRGB(j, i, rgb);
+				}
+			}
+			for (int i = 0; i < imnum; i++) {
+				Vector init = batch_cp.get_column(i);
+				Vector arrival = batch.get_column(i);
+				//Vector theend = final_pos.get_column(i);
+				int classe = testRefs[i];
+				//double confidence = theend.v[classe];
+				boolean isGoodClasse = classe == refs[i];
+				for(int dim = 0 ; dim < 3 ; dim++) {
+					for (int j = 0; j < 28; j++) {
+						for (int k = 0; k < 28; k++) {
+							Vector arr = new Vector(2);
+							arr.v[0] = arrival.v[dim];
+							arr.v[1] = arrival.v[(dim+1)%3];
+							arr.add(dec1);
+							arr.scale(scl);
+							
+							int x = (int) (k - 14 + arr.v[0]);
+							int y = (int) (j - 14 + arr.v[1]);
+							if (x >= 0 && x < width && y >= 0 && y < height) {
+								int indice = 28 * j + k;
+								double color = init.v[indice];
+		
+								int oldcolor = bf.getRGB(x, y);
+								float oldr = ((oldcolor >> 16) & 0xFF) / 255f;
+								float oldg = ((oldcolor >> 8) & 0xFF) / 255f;
+								float oldb = ((oldcolor >> 0) & 0xFF) / 255f;
+		
+								double newr = colors[classe][0]/255.0;//color;
+								double newg = colors[classe][1]/255.0;//color;
+								double newb = colors[classe][2]/255.0;//color;
+								/*
+								if (isGoodClasse) {
+									newg = 1;
+								} else {
+									newr = 1;
+								}
+								*/
+		
+								double blend = color;//confidence * color;
+								int r = (int) ((blend * newr + (1 - blend) * oldr) * 255);
+								int g = (int) ((blend * newg + (1 - blend) * oldg) * 255);
+								int b = (int) ((blend * newb + (1 - blend) * oldb) * 255);
+								int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
+		
+								bf.setRGB(x, y+dim*height, rgb);
+		
+							}
+						}
+					}
+				}
+			}
+		} else {
+			return;
+		}
 		try {
 			ImageIO.write(bf, "png", new File(name + ".png"));
 		} catch (IOException e) {
@@ -241,19 +329,22 @@ public class ImagePerceptron {
 	public static void main(String[] args) {
 		long time = System.currentTimeMillis();
 		RandomGenerator.init(seed);
+		model = new AutoEncoder();
 		
 		load_mnist_data();
 		
-		model = new FeedForwardNetwork();
-		Parameters p = new Parameters("reg=0.00001", "lr=0.001");
+		Parameters p = new Parameters("reg=0", "lr=0.001");
+		// Encode network
 		p.set("dout", "false");
-		model.add(new AffineLayer(784, 800, true, p));
+		model.add(new DenseLayer(784, 128, 0, "tanh", true, p));
 		p.set("dout", "true");
-		model.add(new BatchnormLayer(800, p));
-		model.add(new TanhActivation());
-		model.add(new DropoutLayer(0.5));
-		model.add(new AffineLayer(800, 10, true, p));
-		model.add(new SoftmaxLayer());
+		model.add(new DenseLayer(128, 3, 0, "tanh", false, p));
+		// Decode network
+		p.set("lr", "0.0001");
+		model.add(new DenseLayer(3, 128, 0, "tanh", true, p));
+		model.add(new DenseLayer(128, 784, 0, "sig",  true, p));
+		
+		model.add(new ImageEntropyLoss());
 		System.out.println("# Model created with following architecture : ");
 		model.print_architecture();
 		
@@ -263,29 +354,33 @@ public class ImagePerceptron {
 		double[] trainAccuracy = new double[EPOCHMAX + 1];
 		double[] testAccuracy = new double[EPOCHMAX + 1];
 
-		model.write_weights("test");
 		DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.getDefault());
 		otherSymbols.setDecimalSeparator('.');
 		otherSymbols.setGroupingSeparator(','); 
 		DecimalFormat df = new DecimalFormat("#0.00", otherSymbols);
 		
 
-		//visualize_bottleneck("fig0");
+		visualize_bottleneck("fig0");
 		System.out.println("# Initialization took "+(System.currentTimeMillis()-time)+" ms");
 		
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
-			model.epoch(trainData, trainRefs);
-			//visualize_bottleneck("fig"+i);
+			model.epoch(trainData);
+			model.writeDiff(testData, "auto"+i, 10);
+			visualize_bottleneck("fig"+i);
 			double rms = (System.currentTimeMillis()-t)/1000.;
-			t = System.currentTimeMillis();
-			testAccuracy[i] = 100-(100. * model.correct_count(testData, testRefs)) / T;
-			double test_forward_t = (System.currentTimeMillis()-t)/1000.;
-			trainAccuracy[i] = 100-(100. * model.last_correct_count) / N;
-			System.out.print(i+((i>=10)?" ":"  ")+"Top 1 error rates (train, test) : "+df.format(trainAccuracy[i])+"% "+df.format(testAccuracy[i])+"% loss "+model.last_average_loss+"\t");
-			System.out.print("epoch time "+df.format(rms)+"s test time "+df.format(test_forward_t)+"s");
-			System.out.println(" ETA "+df.format((EPOCHMAX-i)*(test_forward_t+rms))+"s");
+			//t = System.currentTimeMillis();
+			//testAccuracy[i] = 100-(100. * model.correct_count(testData, testRefs)) / T;
+			//double test_forward_t = (System.currentTimeMillis()-t)/1000.;
+			//trainAccuracy[i] = 100-(100. * model.last_correct_count) / N;
+			System.out.print(i+((i>=10)?" ":"  "));
+			//System.out.print("Top 1 error rates (train, test) : "+df.format(trainAccuracy[i])+"% "+df.format(testAccuracy[i])+"% ");
+			System.out.print("loss "+model.last_average_loss+"\t");
+			System.out.print("epoch time "+df.format(rms)+"s");
+			//System.out.print("test time "+df.format(test_forward_t)+"s");
+			System.out.println(" ETA "+df.format((EPOCHMAX-i)*(rms))+"s");
 			//model.write_weights("temp");
+			System.out.println();
 		}
 
 		for (double f : trainAccuracy) {
@@ -296,7 +391,7 @@ public class ImagePerceptron {
 			System.out.print(df.format(f) + ";");
 		}
 		System.out.println();
-		System.out.print("MLPerceptron On the test set : ");
-		System.out.println((100f * model.correct_count(testData, testRefs)) / T);
+		// System.out.print("MLPerceptron On the test set : ");
+		// System.out.println((100f * model.correct_count(testData, testRefs)) / T);
 	}
 }
