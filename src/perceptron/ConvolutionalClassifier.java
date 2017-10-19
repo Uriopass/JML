@@ -92,6 +92,7 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 				last_correct_count += ((SoftmaxCrossEntropy) layers.get(layers.size()-1)).correct;
 				last_average_loss += ((SoftmaxCrossEntropy) layers.get(layers.size()-1)).loss;
 			}
+			last_average_loss /= mini_batch;
 			//System.out.println(last_correct_count);
 			for(Layer l : layers) {
 				if(l instanceof FlatLayer) {

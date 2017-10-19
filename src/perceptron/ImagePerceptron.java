@@ -1,19 +1,12 @@
 package perceptron;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import javax.imageio.ImageIO;
-
 import image.ImageConverter;
-import layers.FlatLayer;
-import layers.ImageEntropyLoss;
 import layers.Parameters;
 import layers.featurelayers.ConvolutionLayer;
 import layers.featurelayers.Flatten;
@@ -24,7 +17,6 @@ import layers.flatlayers.DenseLayer;
 import layers.flatlayers.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
-import math.Vector;
 import mnist.MnistReader;
 
 public class ImagePerceptron {
@@ -326,7 +318,7 @@ public class ImagePerceptron {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		System.out.println("Appuyez sur ENTER pour démarrer : ");
+		System.out.println("Appuyez sur ENTER pour dï¿½marrer : ");
 		try {
 			System.in.read();
 		} catch (IOException e) {
@@ -340,10 +332,10 @@ public class ImagePerceptron {
 		
 		load_mnist_data();
 		
-		Parameters p = new Parameters("reg=0", "lr=0.001");
+		Parameters p = new Parameters("reg=0", "lr=0.001", "dout=false");
 		model.add(new Unflatten(1, 28, 28));
 		ConvolutionLayer cl = new ConvolutionLayer(28, 28, 1, 16, 5, 1, 0, p);
-		
+		p.set("dout", "true");
 		MaxPooling mp = new MaxPooling(cl.width_out, cl.height_out, 3);
 		model.add(cl);
 		model.add(mp);

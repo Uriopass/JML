@@ -20,6 +20,7 @@ public class ConvolutionLayer implements FeatureLayer {
 	public Vector b_grad;
 	public double learning_rate, gamma, eps;
 	public FeatureMatrix cache;
+	public boolean calculate_dout = true;
 
 	public ConvolutionLayer(int width_in, int height_in, int features_in, int features_out, int conv_size, int stride,
 			int padding, Parameters p) {
@@ -53,6 +54,7 @@ public class ConvolutionLayer implements FeatureLayer {
 		learning_rate = p.getAsDouble("lr", 0.01);
 		gamma = p.getAsDouble("gamma", 0.9);
 		eps = p.getAsDouble("eps", 1e-8);
+		calculate_dout = p.getAsString("dout", "true").equalsIgnoreCase("true");
 	}
 
 	@Override
@@ -107,61 +109,62 @@ public class ConvolutionLayer implements FeatureLayer {
 		FeatureMatrix dx = new FeatureMatrix(features_in, width_in, height_in);
 		//System.out.println("hmm... "+dx.height*dx.width*features_out*dout.width*dout.height*features_in*features_in*conv_size);
 
-		Thread[] threads;
-		threads = new Thread[features_out];
-		
-		for (int f_out = 0; f_out < features_out; f_out++) {
-			final Matrix doutv = dout.v[f_out];
-			final FeatureMatrix weightsfout = weights[f_out];
-			threads[f_out] = new Thread(new Runnable() {
-				public void run() {
-					for (int c = 0; c < features_in; c++) {
-						for (int y = 0; y < height_in; y++) {
-							for (int x = 0; x < width_in; x++) {
-								double megasum = 0;
-								boolean ok1 = true, ok2 = true;
-								for (int y_out = 0; y_out < height_out && (ok1 || ok2); y_out++) {
-									for (int x_out = 0; x_out < width_out && ok2; x_out++) {
-										double sum = 0;
-										int dec2 = y + pad - y_out * stride;
-										ok1 = (dec2) >= 0;
-										if ((dec2) < conv_size && ok1) {
-											for (int a = 0; a < features_in; a++) {
-												for (int b = 0; b < conv_size; b++) {
-													sum += weightsfout.v[a].v[dec2][b];
+		if(calculate_dout) {
+			Thread[] threads;
+			threads = new Thread[features_out];
+			
+			for (int f_out = 0; f_out < features_out; f_out++) {
+				final Matrix doutv = dout.v[f_out];
+				final FeatureMatrix weightsfout = weights[f_out];
+				threads[f_out] = new Thread(new Runnable() {
+					public void run() {
+						for (int c = 0; c < features_in; c++) {
+							for (int y = 0; y < height_in; y++) {
+								for (int x = 0; x < width_in; x++) {
+									double megasum = 0;
+									boolean ok1 = true, ok2 = true;
+									for (int y_out = 0; y_out < height_out && (ok1 || ok2); y_out++) {
+										for (int x_out = 0; x_out < width_out && (ok1 || ok2); x_out++) {
+											double sum = 0;
+											int dec2 = y + pad - y_out * stride;
+											ok1 = (dec2) >= 0;
+											if ((dec2) < conv_size && ok1) {
+												for (int a = 0; a < features_in; a++) {
+													for (int b = 0; b < conv_size; b++) {
+														sum += weightsfout.v[a].v[dec2][b];
+													}
 												}
 											}
-										}
-										int dec = x + pad - x_out * stride;
-										ok2 = (dec) >= 0;
-										if ((dec) < conv_size && ok2) {
-											for (int a = 0; a < features_in; a++) {
-												for (int b = 0; b < conv_size; b++) {
-													if (b != dec2)
-														sum += weightsfout.v[a].v[b][dec];
+											int dec = x + pad - x_out * stride;
+											ok2 = (dec) >= 0;
+											if ((dec) < conv_size && ok2) {
+												for (int a = 0; a < features_in; a++) {
+													for (int b = 0; b < conv_size; b++) {
+														if (b != dec2)
+															sum += weightsfout.v[a].v[b][dec];
+													}
 												}
 											}
+	
+											megasum += doutv.v[y_out][x_out] * sum;
 										}
-
-										megasum += doutv.v[y_out][x_out] * sum;
 									}
+									dx.v[c].v[y][x] += megasum;
 								}
-								dx.v[c].v[y][x] += megasum;
 							}
 						}
 					}
+				});
+				threads[f_out].start();
+			}
+			for(int i = 0 ; i < features_out ; i++) {
+				try {
+					threads[i].join();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
-			});
-			threads[f_out].start();
-		}
-		for(int i = 0 ; i < features_out ; i++) {
-			try {
-				threads[i].join();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
 			}
 		}
-
 		return dx;
 	}
 

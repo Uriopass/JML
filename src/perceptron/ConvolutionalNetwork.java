@@ -1,19 +1,12 @@
 package perceptron;
 
-import java.util.ArrayList;
-import java.util.Collections;
-
 import layers.FeatureLayer;
 import layers.FlatLayer;
 import layers.Layer;
 import layers.featurelayers.Flatten;
 import layers.featurelayers.Unflatten;
-import layers.flatlayers.AffineLayer;
-import layers.flatlayers.BatchnormLayer;
-import layers.flatlayers.SoftmaxCrossEntropy;
 import math.FeatureMatrix;
 import math.Matrix;
-import math.Vector;
 
 public class ConvolutionalNetwork extends FeedForwardNetwork {
 	int mini_batch = 0;
