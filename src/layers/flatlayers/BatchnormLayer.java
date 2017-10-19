@@ -1,11 +1,12 @@
 package layers.flatlayers;
 
-import layers.Layer;
+import layers.FlatLayer;
 import layers.Parameters;
 import math.Matrix;
+import math.Optimizers;
 import math.Vector;
 
-public class BatchnormLayer implements Layer {
+public class BatchnormLayer implements FlatLayer {
 	
 	final static double epsilon = 1e-4;
 	final static double rms_gamma = 0.9;
@@ -31,6 +32,8 @@ public class BatchnormLayer implements Layer {
 		this.fan_in = fan_in;
 		gamma = new Vector(fan_in);
 		beta = new Vector(fan_in);
+		gamma_grad = new Vector(fan_in);
+		beta_grad = new Vector(fan_in);
 		gamma_acceleration = new Vector(fan_in);
 		beta_acceleration = new Vector(fan_in);
 		running_mean = new Vector(fan_in);
@@ -89,9 +92,9 @@ public class BatchnormLayer implements Layer {
 		int N = dout.width;
 		// Step 9
 		Matrix dva3 = dout;
-		beta_grad = dout.sum(Matrix.AXIS_WIDTH).scale(1.0 / N);
+		beta_grad.add(dout.sum(Matrix.AXIS_WIDTH).scale(1.0 / N));
 		// Step 8
-		gamma_grad = va2.hadamart(dva3).sum(Matrix.AXIS_WIDTH).scale(1.0 / N);
+		gamma_grad.add(va2.hadamart(dva3).sum(Matrix.AXIS_WIDTH).scale(1.0 / N));
 		Matrix dva2 = dva3.scale(gamma, Matrix.AXIS_WIDTH);
 		// Step 7
 		Vector dinvvar = new Matrix(xmu).hadamart(dva2).sum(Matrix.AXIS_WIDTH);
@@ -118,23 +121,11 @@ public class BatchnormLayer implements Layer {
 
 	@Override
 	public void apply_gradient() {
-		for (int l = 0; l < gamma_acceleration.length; l++) {
-			gamma_acceleration.v[l] = rms_gamma * gamma_acceleration.v[l]
-					+ (1 - rms_gamma) * gamma_grad.v[l] * gamma_grad.v[l];
-			gamma_grad.v[l] *= -learning_rate / (Math.sqrt(epsilon + gamma_acceleration.v[l]));
-			gamma.v[l] += gamma_grad.v[l];
-		}
-		for (int l = 0; l < beta_acceleration.length; l++) {
-			beta_acceleration.v[l] = rms_gamma * beta_acceleration.v[l]
-					+ (1 - rms_gamma) * beta_grad.v[l] * beta_grad.v[l];
-			beta_grad.v[l] *= -learning_rate / (Math.sqrt(epsilon + beta_acceleration.v[l]));
-			beta.v[l] += beta_grad.v[l];
-		}
+		Optimizers.RMSProp(gamma, gamma_grad, gamma_acceleration, rms_gamma, learning_rate, epsilon);
+		Optimizers.RMSProp(beta, beta_grad, beta_acceleration, rms_gamma, learning_rate, epsilon);
 		
-		
-		//gamma.add(gamma_grad.scale(-learning_rate));
-		//beta.add(beta_grad.scale(-learning_rate));
-		//System.out.println(gamma);
+		gamma_grad.fill(0);
+		beta_grad.fill(0);
 	}
 	
 	@Override

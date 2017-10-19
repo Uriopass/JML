@@ -1,13 +1,13 @@
 package layers.flatlayers;
 
-import layers.Layer;
+import layers.FlatLayer;
 import layers.Parameters;
 import math.Initialisations;
 import math.Matrix;
-import math.RandomGenerator;
+import math.Optimizers;
 import math.Vector;
 
-public class AffineLayer implements Layer {
+public class AffineLayer implements FlatLayer {
 	public Matrix weight;
 	public Vector bias;
 	
@@ -31,8 +31,10 @@ public class AffineLayer implements Layer {
 		this.fan_in = fan_in;
 		this.fan_out = fan_out;
 		weight = new Matrix(fan_in, fan_out);
+		w_grad = new Matrix(fan_in, fan_out);
 		w_acceleration = new Matrix(fan_in, fan_out);
 		bias = new Vector(fan_out);
+		b_grad = new Vector(fan_out);
 		b_acceleration = new Vector(fan_out);
 		
 		if(init) {
@@ -70,9 +72,9 @@ public class AffineLayer implements Layer {
 	
 	@Override
 	public Matrix backward(Matrix dout) {
-		w_grad = dout.parralel_mult(cache.T()).scale(1.0 / cache.width)
-				.add(Matrix.scale(weight, regularization));
-		b_grad = dout.sum(1).scale(1.0 / cache.width);
+		w_grad.add(dout.parralel_mult(cache.T()).scale(1.0 / cache.width)
+				.add(Matrix.scale(weight, regularization)));
+		b_grad.add(dout.sum(1).scale(1.0 / cache.width));
 		
 		if(!calculate_dout)
 			return null;
@@ -81,25 +83,15 @@ public class AffineLayer implements Layer {
 	
 	@Override
 	public void apply_gradient() {
-		for (int l = 0; l < w_acceleration.height; l++) {
-			for (int m = 0; m < w_acceleration.width; m++) {
-				w_acceleration.v[l][m] = gamma * w_acceleration.v[l][m]
-						+ (1 - gamma) * w_grad.v[l][m] * w_grad.v[l][m];
-				w_grad.v[l][m] *= -learning_rate / (Math.sqrt(epsilon + w_acceleration.v[l][m]));
-				weight.v[l][m] += w_grad.v[l][m];
-			}
-		}
-		for (int l = 0; l < b_acceleration.length; l++) {
-			b_acceleration.v[l] = gamma * b_acceleration.v[l]
-					+ (1 - gamma) * b_grad.v[l] * b_grad.v[l];
-			b_grad.v[l] *= -learning_rate / (Math.sqrt(epsilon + b_acceleration.v[l]));
-			bias.v[l] += b_grad.v[l];
-		}
+		Optimizers.RMSProp(weight, w_grad, w_acceleration, gamma, learning_rate, epsilon);
+		Optimizers.RMSProp(bias, b_grad, b_acceleration, gamma, learning_rate, epsilon);
 		/*
 		weight.add(w_grad.scale(-learning_rate));
 		bias.add(b_grad.scale(-learning_rate));
 		*/
 		learning_rate *= learning_rate_decay;
+		w_grad.fill(0);
+		b_grad.fill(0);
 	}
 	
 	@Override

@@ -1,19 +1,9 @@
 package perceptron;
 
-import java.io.File;
-import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Scanner;
 
 import layers.Layer;
-import layers.Parameters;
-import layers.activations.TanhActivation;
-import layers.flatlayers.AffineLayer;
-import layers.flatlayers.BatchnormLayer;
-import layers.flatlayers.SoftmaxCrossEntropy;
 import math.Matrix;
-import math.Vector;
 
 public abstract class FeedForwardNetwork {
 	public ArrayList<Layer> layers;

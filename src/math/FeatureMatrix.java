@@ -33,4 +33,9 @@ public class FeatureMatrix {
 			m.zero_pad(pad);
 		}
 	}
+	
+	@Override
+	public String toString() {
+		return "("+features+", "+width+", "+height+")";
+	}
 }

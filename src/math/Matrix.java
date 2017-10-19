@@ -300,7 +300,6 @@ public class Matrix {
 		return this;
 	}
 
-
 	public Matrix add(Vector v, int axis) {
 		if(axis == AXIS_HEIGHT) {
 			if(v.length != this.width)

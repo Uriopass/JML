@@ -1,10 +1,10 @@
 package layers.flatlayers;
 
-import layers.Layer;
+import layers.FlatLayer;
 import math.Matrix;
 import math.RandomGenerator;
 
-public class DropoutLayer implements Layer {
+public class DropoutLayer implements FlatLayer {
 	Matrix cache;
 	public double keep_prob;
 	public double scale;

@@ -1,11 +1,11 @@
 package layers.activations;
 
 import layers.FeatureLayer;
-import layers.Layer;
+import layers.FlatLayer;
 import math.FeatureMatrix;
 import math.Matrix;
 
-public abstract class ActivationLayer implements Layer, FeatureLayer {
+public abstract class ActivationLayer implements FlatLayer, FeatureLayer {
 	protected boolean needs_cache_before = false;
 	protected boolean needs_cache_after  = true;
 	protected boolean is_feature_layer   = false;

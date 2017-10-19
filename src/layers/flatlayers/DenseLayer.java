@@ -1,6 +1,6 @@
 package layers.flatlayers;
 
-import layers.Layer;
+import layers.FlatLayer;
 import layers.Parameters;
 import layers.activations.ActivationLayer;
 import layers.activations.ReLUActivation;
@@ -8,7 +8,7 @@ import layers.activations.SigmoidActivation;
 import layers.activations.TanhActivation;
 import math.Matrix;
 
-public class DenseLayer implements Layer {
+public class DenseLayer implements FlatLayer {
 	AffineLayer al;
 	DropoutLayer dl;
 	BatchnormLayer bl;
@@ -76,4 +76,8 @@ public class DenseLayer implements Layer {
 			dl.apply_gradient();
 	}
 
+	@Override
+	public String toString() {
+		return al+"\n"+((bl!=null)?bl+"\n":"")+act+((dl!=null)?"\n"+dl:"");
+	}
 }

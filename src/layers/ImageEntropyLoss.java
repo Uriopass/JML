@@ -2,7 +2,7 @@ package layers;
 
 import math.Matrix;
 
-public class ImageEntropyLoss implements Layer {
+public class ImageEntropyLoss implements FlatLayer {
 	
 	Matrix ref;
 	public double loss;

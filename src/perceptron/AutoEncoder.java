@@ -10,17 +10,24 @@ import javax.imageio.ImageIO;
 
 import layers.ImageEntropyLoss;
 import layers.Layer;
+import layers.FlatLayer;
 import layers.flatlayers.AffineLayer;
 import layers.flatlayers.BatchnormLayer;
 import math.Matrix;
 import math.Vector;
 
 public class AutoEncoder extends FeedForwardNetwork {
-
+	ArrayList<FlatLayer> layers;
+	
+	@Override
+	public void add(Layer l) {
+		layers.add((FlatLayer)l);
+	}
+	
 	@Override
 	public Matrix forward(Matrix data) {
 		Matrix next = new Matrix(data);
-		for(Layer l : layers) {
+		for(FlatLayer l : layers) {
 			next = l.forward(next, false);
 		}
 		return next;
@@ -101,7 +108,7 @@ public class AutoEncoder extends FeedForwardNetwork {
 		}
 		last_average_loss /= data.width / mini_batch;
 		
-		for(Layer l : layers) {
+		for(FlatLayer l : layers) {
 			if(l instanceof BatchnormLayer) {
 				((BatchnormLayer)l).end_of_epoch();
 			}

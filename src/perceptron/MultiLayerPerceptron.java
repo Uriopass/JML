@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
 
+import layers.FlatLayer;
 import layers.Layer;
 import layers.Parameters;
 import layers.activations.TanhActivation;
@@ -17,6 +18,13 @@ import math.Vector;
 
 public class MultiLayerPerceptron extends FeedForwardNetwork {
 
+	ArrayList<FlatLayer> layers;
+	
+	@Override
+	public void add(Layer l) {
+		layers.add((FlatLayer)l);
+	}
+	
 	public int global_counter = 1;
 	public int last_correct_count = 0;
 
@@ -47,7 +55,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			
 			init_layers(dims, false);
 			ArrayList<AffineLayer> afflayers = new ArrayList<AffineLayer>();
-			for(Layer l : layers) {
+			for(FlatLayer l : layers) {
 				if(l instanceof AffineLayer) {
 					afflayers.add((AffineLayer) l);
 				}
@@ -78,7 +86,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 		double learning_rate_decay = 1;//0.794328235; // x^10 = 0.1
 		double reg = 0.00003;
 		
-		layers = new ArrayList<Layer>();
+		layers = new ArrayList<FlatLayer>();
 		Parameters p = new Parameters("lr="+learning_rate, "lrdecay="+learning_rate_decay, "reg="+reg);
 		for(int i = 0 ; i < dims.length-1 ; i++) {
 			if(i == 0)
@@ -100,7 +108,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	@Override
 	public Matrix forward(Matrix data) {
 		Matrix next = new Matrix(data);
-		for(Layer l : layers) {
+		for(FlatLayer l : layers) {
 			next = l.forward(next, false);
 		}
 		return next;
@@ -152,7 +160,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 		}
 		last_average_loss /= data.width / mini_batch;
 		
-		for(Layer l : layers) {
+		for(FlatLayer l : layers) {
 			if(l instanceof BatchnormLayer) {
 				((BatchnormLayer)l).end_of_epoch();
 			}
@@ -182,7 +190,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			}
 			PrintWriter pw = new PrintWriter(f);
 			ArrayList<AffineLayer> afflayers = new ArrayList<AffineLayer>();
-			for(Layer l : layers) {
+			for(FlatLayer l : layers) {
 				if(l instanceof AffineLayer) {
 					afflayers.add((AffineLayer) l);
 				}

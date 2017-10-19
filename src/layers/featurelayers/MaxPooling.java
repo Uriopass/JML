@@ -19,6 +19,7 @@ public class MaxPooling implements FeatureLayer {
 		}
 		width_out = width_in/stride;
 		height_out = height_in/stride;
+		this.stride = stride;
 	}
 	
 	@Override
@@ -62,4 +63,8 @@ public class MaxPooling implements FeatureLayer {
 	public void apply_gradient() {
 	}
 
+	@Override
+	public String toString() {
+		return "MaxPooling("+stride+")";
+	}
 }

@@ -12,17 +12,15 @@ import java.util.Locale;
 import javax.imageio.ImageIO;
 
 import image.ImageConverter;
+import layers.FlatLayer;
 import layers.ImageEntropyLoss;
-import layers.ImageQuadraticLoss;
-import layers.Layer;
 import layers.Parameters;
-import layers.activations.ReLUActivation;
-import layers.activations.SigmoidActivation;
-import layers.activations.TanhActivation;
+import layers.featurelayers.ConvolutionLayer;
+import layers.featurelayers.Flatten;
+import layers.featurelayers.MaxPooling;
+import layers.featurelayers.Unflatten;
 import layers.flatlayers.AffineLayer;
-import layers.flatlayers.BatchnormLayer;
 import layers.flatlayers.DenseLayer;
-import layers.flatlayers.DropoutLayer;
 import layers.flatlayers.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
@@ -36,12 +34,12 @@ public class ImagePerceptron {
 	public static String labelDB = path + "train-labels.idx1-ubyte";
 	public static String imageDB = path + "train-images.idx3-ubyte";
 
-	public static AutoEncoder model;
+	public static ConvolutionalClassifier model;
 
 	// Nombre d'epoque max
 	public final static int EPOCHMAX = 50;
 
-	public static final int N_t = 50000;
+	public static final int N_t = 5000;
 
 	public static int T_t = 1000;
 
@@ -103,7 +101,7 @@ public class ImagePerceptron {
 		trainData = trainData.transpose();
 		testData = testData.transpose();
 	}
-	
+	/*
 	public static void visualize_bottleneck(String name) {
 		int cellsize = 10;
 		int imnum = T;
@@ -131,7 +129,7 @@ public class ImagePerceptron {
 		}
 		int visu_layer = -1;
 		for (int i = 0; i < model.layers.size() ; i++) {
-			Layer l = model.layers.get(i);
+			FlatLayer l = model.layers.get(i);
 			if(l instanceof AffineLayer) {
 				if (((AffineLayer)l).weight.height == bottleneckdim) {
 					visu_layer = i + 2;
@@ -150,7 +148,7 @@ public class ImagePerceptron {
 			final_pos = model.layers.get(k).forward(final_pos, false);
 		}
 		*/
-		
+		/*
 		double max = 1.1;//batch.getRow(0).max();
 		double min = -1.1;//batch.getRow(0).min();
 		/*
@@ -166,6 +164,7 @@ public class ImagePerceptron {
 			all = model.layers.get(k).forward(all, false);
 		}
 		*/
+	/*
 		BufferedImage bf;
 		if(bottleneckdim == 2) {
 			bf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -224,7 +223,7 @@ public class ImagePerceptron {
 								newr = 1;
 							}
 							*/
-	
+	/*
 							double blend = color;//confidence * color;
 							int r = (int) ((blend * newr + (1 - blend) * oldr) * 255);
 							int g = (int) ((blend * newg + (1 - blend) * oldg) * 255);
@@ -299,7 +298,7 @@ public class ImagePerceptron {
 									newr = 1;
 								}
 								*/
-		
+		/*
 								double blend = color;//confidence * color;
 								int r = (int) ((blend * newr + (1 - blend) * oldr) * 255);
 								int g = (int) ((blend * newg + (1 - blend) * oldg) * 255);
@@ -322,29 +321,37 @@ public class ImagePerceptron {
 			e.printStackTrace();
 		}
 	}
-	
+	*/
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		System.out.println("Appuyez sur ENTER pour démarrer : ");
+		try {
+			System.in.read();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		long time = System.currentTimeMillis();
 		RandomGenerator.init(seed);
-		model = new AutoEncoder();
+		model = new ConvolutionalClassifier(32);
 		
 		load_mnist_data();
 		
 		Parameters p = new Parameters("reg=0", "lr=0.001");
-		// Encode network
-		p.set("dout", "false");
-		model.add(new DenseLayer(784, 128, 0, "tanh", true, p));
-		p.set("dout", "true");
-		model.add(new DenseLayer(128, 3, 0, "tanh", false, p));
-		// Decode network
-		p.set("lr", "0.0001");
-		model.add(new DenseLayer(3, 128, 0, "tanh", true, p));
-		model.add(new DenseLayer(128, 784, 0, "sig",  true, p));
+		model.add(new Unflatten(1, 28, 28));
+		ConvolutionLayer cl = new ConvolutionLayer(28, 28, 1, 16, 5, 1, 0, p);
 		
-		model.add(new ImageEntropyLoss());
+		MaxPooling mp = new MaxPooling(cl.width_out, cl.height_out, 3);
+		model.add(cl);
+		model.add(mp);
+		model.add(new Flatten());
+		model.add(new DenseLayer(mp.width_out*mp.height_out*cl.features_out, 128, 0, "tanh", false, p));
+		model.add(new AffineLayer(128, 10, true, p));
+		model.add(new SoftmaxCrossEntropy());
+		
 		System.out.println("# Model created with following architecture : ");
 		model.print_architecture();
 		
@@ -360,24 +367,24 @@ public class ImagePerceptron {
 		DecimalFormat df = new DecimalFormat("#0.00", otherSymbols);
 		
 
-		visualize_bottleneck("fig0");
+		//visualize_bottleneck("fig0");
 		System.out.println("# Initialization took "+(System.currentTimeMillis()-time)+" ms");
 		
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
-			model.epoch(trainData);
-			model.writeDiff(testData, "auto"+i, 10);
-			visualize_bottleneck("fig"+i);
+			model.epoch(trainData, trainRefs);
+			// model.writeDiff(testData, "auto"+i, 10);
+			//visualize_bottleneck("fig"+i);
 			double rms = (System.currentTimeMillis()-t)/1000.;
-			//t = System.currentTimeMillis();
-			//testAccuracy[i] = 100-(100. * model.correct_count(testData, testRefs)) / T;
-			//double test_forward_t = (System.currentTimeMillis()-t)/1000.;
-			//trainAccuracy[i] = 100-(100. * model.last_correct_count) / N;
+			t = System.currentTimeMillis();
+			testAccuracy[i] = 100-(100. * model.correct_count(testData, testRefs)) / T;
+			double test_forward_t = (System.currentTimeMillis()-t)/1000.;
+			trainAccuracy[i] = 100-(100. * model.last_correct_count) / N;
 			System.out.print(i+((i>=10)?" ":"  "));
-			//System.out.print("Top 1 error rates (train, test) : "+df.format(trainAccuracy[i])+"% "+df.format(testAccuracy[i])+"% ");
+			System.out.print("Top 1 error rates (train, test) : "+df.format(trainAccuracy[i])+"% "+df.format(testAccuracy[i])+"% ");
 			System.out.print("loss "+model.last_average_loss+"\t");
 			System.out.print("epoch time "+df.format(rms)+"s");
-			//System.out.print("test time "+df.format(test_forward_t)+"s");
+			System.out.print("test time "+df.format(test_forward_t)+"s");
 			System.out.println(" ETA "+df.format((EPOCHMAX-i)*(rms))+"s");
 			//model.write_weights("temp");
 			System.out.println();

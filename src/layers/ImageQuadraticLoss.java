@@ -2,7 +2,7 @@ package layers;
 
 import math.Matrix;
 
-public class ImageQuadraticLoss implements Layer {
+public class ImageQuadraticLoss implements FlatLayer {
 	
 	Matrix ref;
 	public double loss;
