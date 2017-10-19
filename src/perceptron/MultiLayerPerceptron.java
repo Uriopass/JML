@@ -33,6 +33,10 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 		init_layers(dims, true);
 	}
 	
+	public MultiLayerPerceptron() {
+		layers = new ArrayList<FlatLayer>();
+	}
+	
 	/**
 	 * @param name File name
 	 */

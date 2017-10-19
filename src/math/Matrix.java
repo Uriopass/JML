@@ -46,11 +46,11 @@ public class Matrix {
 	}
 	
 	public static Matrix mult(Matrix a, Matrix b) {
+		
 		if(b.height != a.width) {
 			throw new RuntimeException("Incompatible shape with ("+a.width+", "+a.height+") and ("+b.width+", "+b.height+") "+a.width+" != "+b.height);
 		}
 		Matrix res = new Matrix(b.width, a.height);
-		
 		double sum;
 		for(int j = 0 ; j < res.height ; j++) {
 			for(int i = 0 ; i < res.width ; i++) {
@@ -86,8 +86,6 @@ public class Matrix {
 		}
 		return res;
 	}
-	
-	public static int cores = 8;
 	
 	public static double l2norm(Matrix a) {
 		double n = 0;
