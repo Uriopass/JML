@@ -4,17 +4,20 @@ import layers.FeatureLayer;
 import layers.FlatLayer;
 import math.FeatureMatrix;
 import math.Matrix;
+import math.Vector;
 
 public abstract class ActivationLayer implements FlatLayer, FeatureLayer {
 	protected boolean needs_cache_before = false;
 	protected boolean needs_cache_after  = true;
-	protected boolean is_feature_layer   = false;
 	
 	public abstract double activation_forward(double in);
 	public abstract double activation_backward();
 
-	private Matrix cache_before;
-	private Matrix cache_after;
+	private Matrix m_cache_before;
+	private Matrix m_cache_after;
+	
+	private Vector v_cache_before;
+	private Vector v_cache_after;
 
 	private FeatureMatrix f_cache_before;
 	private FeatureMatrix f_cache_after;
@@ -22,29 +25,48 @@ public abstract class ActivationLayer implements FlatLayer, FeatureLayer {
 	private int i, j, f;
 	
 	protected double get_before() {
-		if(is_feature_layer)
+		if(m_cache_before != null)
+			return m_cache_before.v[i][j];
+		if(f_cache_before != null)
 			return f_cache_before.v[f].v[i][j];
-		return cache_before.v[i][j];
+		if(v_cache_before != null)
+			return v_cache_before.v[i];
+		return 0;
 	}
 	
 	protected double get_after() {
-		if(is_feature_layer)
+		if(m_cache_before != null)
+			return m_cache_after.v[i][j];
+		if(f_cache_before != null)
 			return f_cache_after.v[f].v[i][j];
-		return cache_after.v[i][j];
+		if(v_cache_before != null)
+			return v_cache_after.v[i];
+		return 0;
 	}
 	
 	
 	@Override
 	public Matrix forward(Matrix in, boolean training) {
 		if(training && needs_cache_before)
-			cache_before = new Matrix(in);
+			m_cache_before = new Matrix(in);
 		for(int i = 0 ; i < in.height ; i++) {
 			for(int j = 0 ; j < in.width ; j++) {
 				in.v[i][j] = activation_forward(in.v[i][j]);
 			}
 		}
 		if(training && needs_cache_after)
-			cache_after = new Matrix(in);
+			m_cache_after = new Matrix(in);
+		return in;
+	}
+	
+	public Vector forward(Vector in, boolean training) {
+		if(training && needs_cache_before)
+			v_cache_before = new Vector(in);
+		for(int i = 0 ; i < in.length ; i++) {
+			in.v[i] = activation_forward(in.v[i]);
+		}
+		if(training && needs_cache_after)
+			v_cache_after = new Vector(in);
 		return in;
 	}
 	
@@ -71,6 +93,14 @@ public abstract class ActivationLayer implements FlatLayer, FeatureLayer {
 				this.j = j;
 				dout.v[i][j] *= activation_backward();
 			}
+		}
+		return dout;
+	}
+	
+	public Vector backward(Vector dout) {
+		for(int i = 0 ; i < dout.length ; i++) {
+			this.i = i;
+			dout.v[i] *= activation_backward();
 		}
 		return dout;
 	}

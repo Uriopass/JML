@@ -3,8 +3,8 @@ package perceptron;
 import layers.FeatureLayer;
 import layers.FlatLayer;
 import layers.Layer;
-import layers.featurelayers.Flatten;
-import layers.featurelayers.Unflatten;
+import layers.features.Flatten;
+import layers.features.Unflatten;
 import math.FeatureMatrix;
 import math.Matrix;
 

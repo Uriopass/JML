@@ -10,15 +10,15 @@ import layers.FlatLayer;
 import layers.Layer;
 import layers.Parameters;
 import layers.activations.TanhActivation;
-import layers.flatlayers.AffineLayer;
-import layers.flatlayers.BatchnormLayer;
-import layers.flatlayers.SoftmaxCrossEntropy;
+import layers.flat.AffineLayer;
+import layers.flat.BatchnormLayer;
+import layers.flat.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.Vector;
 
 public class MultiLayerPerceptron extends FeedForwardNetwork {
 
-	ArrayList<FlatLayer> layers;
+	public ArrayList<FlatLayer> layers;
 	
 	@Override
 	public void add(Layer l) {
@@ -118,6 +118,20 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 		return next;
 	}
 	
+	public Matrix forward_train(Matrix data) {
+		Matrix next = new Matrix(data);
+		for(FlatLayer l : layers) {
+			next = l.forward(next, true);
+		}
+		return next;
+	}
+	
+	public void backward_train(Matrix dout) {
+		for(int j = layers.size()-1 ; j >= 0 ; j--) {
+			dout = layers.get(j).backward(dout);
+			layers.get(j).apply_gradient();
+		}
+	}
 	
 	public void epoch(Matrix data, int[] refs) {
 		last_correct_count = 0;
@@ -148,17 +162,12 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 				refs_v[j] = refs[indice];
 			}
 			
-			for(int j = 0 ; j < layers.size() ; j++) {
-				batch = layers.get(j).forward(batch, true);
-			}
+			batch = forward_train(batch);
 			
 			Matrix dout = batch;
 			((SoftmaxCrossEntropy) layers.get(layers.size()-1)).feedrefs(refs_v);
 			
-			for(int j = layers.size()-1 ; j >= 0 ; j--) {
-				dout = layers.get(j).backward(dout);
-				layers.get(j).apply_gradient();
-			}
+			backward_train(dout);
 			last_correct_count += ((SoftmaxCrossEntropy) layers.get(layers.size()-1)).correct;
 			last_average_loss += ((SoftmaxCrossEntropy) layers.get(layers.size()-1)).loss;
 		}
@@ -229,6 +238,14 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			e.printStackTrace();
 		}
 	}
+	
+	@Override
+	public void print_architecture() {
+		for(Layer l : layers) {
+			System.out.println("# - "+l);
+		}
+	}
+	
 	
 	/*
 	// Met à jour les poids en passant par toutes les données une fois

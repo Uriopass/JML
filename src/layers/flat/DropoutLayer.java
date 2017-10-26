@@ -1,4 +1,4 @@
-package layers.flatlayers;
+package layers.flat;
 
 import layers.FlatLayer;
 import math.Matrix;

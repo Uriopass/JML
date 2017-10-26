@@ -1,4 +1,4 @@
-package perceptron;
+package main;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -6,11 +6,16 @@ import java.util.List;
 import java.util.Locale;
 
 import image.ImageConverter;
+import layers.Parameters;
+import layers.flat.DenseLayer;
+import layers.flat.SoftmaxCrossEntropy;
+import layers.flat.SplitAffineLayer;
 import math.Matrix;
 import math.RandomGenerator;
 import mnist.MnistReader;
+import perceptron.MultiLayerPerceptron;
 
-public class ImagePerceptron {
+public class MainForward {
 
 	/* Les donnees */
 	public static String path = "";
@@ -20,11 +25,11 @@ public class ImagePerceptron {
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 50;
+	public final static int EPOCHMAX = 10;
 
-	public static final int N_t = 10000;
+	public static final int N_t = 50000;
 
-	public static int T_t = 1000;
+	public static int T_t = 5000;
 
 	public static int N;
 	public static int T;
@@ -314,8 +319,13 @@ public class ImagePerceptron {
 		System.out.println("Appuyez sur ENTER pour d�marrer : ");
 		long time = System.currentTimeMillis();
 		RandomGenerator.init(seed);
-		model = new MultiLayerPerceptron(784, 1024, 10);
+		model = new MultiLayerPerceptron();
 		load_mnist_data();
+		Parameters p = new Parameters("reg=0.0001", "lr=0.001", "dout=false");
+		model.add(new DenseLayer(784, 1000, 0.4, "tanh", true, p));
+		p.set("dout", "true");
+		model.add(new SplitAffineLayer(1000, 10, true, p));
+		model.add(new SoftmaxCrossEntropy());
 		/*
 		Parameters p = new Parameters("reg=0", "lr=0.001", "dout=false");
 		model.add(new Unflatten(1, 28, 28));
@@ -328,10 +338,10 @@ public class ImagePerceptron {
 		model.add(new DenseLayer(mp.width_out * mp.height_out * cl.features_out, 128, 0, "tanh", false, p));
 		model.add(new AffineLayer(128, 10, true, p));
 		model.add(new SoftmaxCrossEntropy());
-
+*/
 		System.out.println("# Model created with following architecture : ");
 		model.print_architecture();
-	*/
+	
 		System.out.println("# Seed : " + seed);
 		System.out.println("# Processors : " + Runtime.getRuntime().availableProcessors());
 
@@ -366,6 +376,8 @@ public class ImagePerceptron {
 			//model.write_weights("temp");
 			System.out.println();
 		}
+		
+		((DenseLayer)model.layers.get(0)).al.weight.visualize("test", 28, 25, 40, true);
 
 		for (double f : trainAccuracy) {
 			System.out.print(df.format(f) + ";");

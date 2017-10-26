@@ -2,7 +2,7 @@ package layers;
 
 import math.Matrix;
 
-public class ImageQuadraticLoss implements FlatLayer {
+public class QuadraticLoss implements FlatLayer {
 	
 	Matrix ref;
 	public double loss;
@@ -19,6 +19,7 @@ public class ImageQuadraticLoss implements FlatLayer {
 	@Override
 	public Matrix backward(Matrix dout) {
 		dout.add(ref.scale(-1));
+		//dout.print_values();
 		loss = 0.5*Matrix.hadamart(dout, dout).sum()/dout.width;
 		return dout;
 	}

@@ -1,0 +1,42 @@
+package main;
+
+import RL.EpsilonFunction;
+import RL.QLearn;
+import RL.environments.Environment;
+import RL.environments.ForwardTest;
+import RL.environments.GridWorld;
+import layers.Parameters;
+import layers.QuadraticLoss;
+import layers.flat.DenseLayer;
+import math.RandomGenerator;
+import perceptron.MultiLayerPerceptron;
+
+public class MainQLearning {
+	
+	
+	public static void main(String[] args) {
+		/*System.out.println("Appuyez sur ENTER pour démarrer : ");
+		try {
+			System.in.read();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+
+		for(int i = 1 ; i < 10 ; i++) {
+			Parameters p = new Parameters("reg=0.00001");
+			Environment env = new ForwardTest(i);
+			MultiLayerPerceptron model = new MultiLayerPerceptron();
+			int hidden = 48;
+			model.add(new DenseLayer(env.state_size, hidden, 0, "tanh", false, p));		
+			// model.add(new GaussianNoise(0.05));
+			model.add(new DenseLayer(hidden, env.action_size, 0, "none", false, p));
+			model.add(new QuadraticLoss());
+			
+			RandomGenerator.init(System.currentTimeMillis());
+			QLearn learner = new QLearn(model, env, 0.1, EpsilonFunction.constant);
+			learner.learn(1000, 2000);
+			System.out.println(learner.reward/1000);
+		}
+	}
+}

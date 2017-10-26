@@ -1,4 +1,4 @@
-package layers.featurelayers;
+package layers.features;
 
 import layers.FeatureLayer;
 import layers.Parameters;

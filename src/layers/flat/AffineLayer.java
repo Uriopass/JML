@@ -1,21 +1,18 @@
-package layers.flatlayers;
+package layers.flat;
 
 import layers.FlatLayer;
 import layers.Parameters;
 import math.Initialisations;
 import math.Matrix;
 import math.Optimizers;
-import math.Vector;
+import math.RMSMatrix;
+import math.RMSVector;
 
 public class AffineLayer implements FlatLayer {
-	public Matrix weight;
-	public Vector bias;
+	public RMSMatrix weight;
+	public RMSVector bias;
 	
 	private Matrix cache;
-	private Matrix w_grad;
-	private Matrix w_acceleration;
-	private Vector b_grad;
-	private Vector b_acceleration;
 
 	public double regularization;
 	public double learning_rate;
@@ -30,19 +27,13 @@ public class AffineLayer implements FlatLayer {
 	public AffineLayer(int fan_in, int fan_out, boolean init, Parameters p) {
 		this.fan_in = fan_in;
 		this.fan_out = fan_out;
-		weight = new Matrix(fan_in, fan_out);
-		w_grad = new Matrix(fan_in, fan_out);
-		w_acceleration = new Matrix(fan_in, fan_out);
-		bias = new Vector(fan_out);
-		b_grad = new Vector(fan_out);
-		b_acceleration = new Vector(fan_out);
+		weight = new RMSMatrix(fan_in, fan_out);
+		bias = new RMSVector(fan_out);
 		
 		if(init) {
 			Initialisations.he_uniform(weight, fan_in, p.getAsDouble("init_multiplier", 1));
 			
-			for (int i = 0; i < bias.length; i++) {
-				bias.v[i] = 0;
-			}
+			bias.fill(0);
 		}
 		
 		if(p == null) {
@@ -72,9 +63,9 @@ public class AffineLayer implements FlatLayer {
 	
 	@Override
 	public Matrix backward(Matrix dout) {
-		w_grad.add(dout.parralel_mult(cache.T()).scale(1.0 / cache.width)
+		weight.grad.add(dout.parralel_mult(cache.T()).scale(1.0 / cache.width)
 				.add(Matrix.scale(weight, regularization)));
-		b_grad.add(dout.sum(1).scale(1.0 / cache.width));
+		bias.grad.add(dout.sum(Matrix.AXIS_WIDTH).scale(1.0 / cache.width));
 		
 		if(!calculate_dout)
 			return null;
@@ -83,15 +74,8 @@ public class AffineLayer implements FlatLayer {
 	
 	@Override
 	public void apply_gradient() {
-		Optimizers.RMSProp(weight, w_grad, w_acceleration, gamma, learning_rate, epsilon);
-		Optimizers.RMSProp(bias, b_grad, b_acceleration, gamma, learning_rate, epsilon);
-		/*
-		weight.add(w_grad.scale(-learning_rate));
-		bias.add(b_grad.scale(-learning_rate));
-		*/
-		learning_rate *= learning_rate_decay;
-		w_grad.fill(0);
-		b_grad.fill(0);
+		Optimizers.RMSProp(weight, gamma, learning_rate, epsilon);
+		Optimizers.RMSProp(bias, gamma, learning_rate, epsilon);
 	}
 	
 	@Override

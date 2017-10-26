@@ -8,11 +8,11 @@ import java.util.Collections;
 
 import javax.imageio.ImageIO;
 
-import layers.ImageEntropyLoss;
+import layers.EntropyLoss;
 import layers.Layer;
+import layers.flat.AffineLayer;
+import layers.flat.BatchnormLayer;
 import layers.FlatLayer;
-import layers.flatlayers.AffineLayer;
-import layers.flatlayers.BatchnormLayer;
 import math.Matrix;
 import math.Vector;
 
@@ -98,13 +98,13 @@ public class AutoEncoder extends FeedForwardNetwork {
 			}
 			
 			Matrix dout = batch;
-			((ImageEntropyLoss) layers.get(layers.size()-1)).feed_ref(batch_init);
+			((EntropyLoss) layers.get(layers.size()-1)).feed_ref(batch_init);
 			
 			for(int j = layers.size()-1 ; j >= 0 ; j--) {
 				dout = layers.get(j).backward(dout);
 				layers.get(j).apply_gradient();
 			}
-			last_average_loss += ((ImageEntropyLoss) layers.get(layers.size()-1)).loss;
+			last_average_loss += ((EntropyLoss) layers.get(layers.size()-1)).loss;
 		}
 		last_average_loss /= data.width / mini_batch;
 		

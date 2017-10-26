@@ -167,6 +167,28 @@ public class Vector {
 			min = Math.min(min, v[i]);
 		return min;
 	}
+	
+	public Matrix to_column_matrix() {
+		Matrix m = new Matrix(1, this.length);
+		m.set_column(0, this);
+		return m;
+	}
+	
+	public Matrix to_row_matrix() {
+		Matrix m = new Matrix(this.length, 1);
+		m.set_row(0, this);
+		return m;
+	}
+	
+	public Vector append(Vector b) {
+		   int aLen = length;
+		   int bLen = b.length;
+		   double[] c= new double[aLen+bLen];
+		   System.arraycopy(v, 0, c, 0, aLen);
+		   System.arraycopy(b.v, 0, c, aLen, bLen);
+		   v = c;
+		   return this;
+	}
 
 	@Override
 	public String toString() {

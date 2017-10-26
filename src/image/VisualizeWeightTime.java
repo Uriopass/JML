@@ -18,7 +18,7 @@ public class VisualizeWeightTime {
 	
 	
 	public void add(Matrix w, int dimension) {
-		 bfs.add(w.visualize("", dimension, true, false));
+		 bfs.add(w.visualize("", dimension, 1, w.height, false));
 	}
 	
 	public void AddVisualize(int layer) {
