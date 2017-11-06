@@ -19,7 +19,7 @@ public class QLearn {
 	public double discount = 0.9;
 	public int mini_batch_size = 64;
 	public double loss = 0;
-	public double reward = 0;
+	public double cumulated_reward = 0;
 
 	ArrayList<Experience> experiences;
 	
@@ -74,15 +74,15 @@ public class QLearn {
 	}
 	
 	public void learn(int epochs, int print_every) {
-		
+		double local_reward = 0;
 		for(int episode = 1 ; episode < epochs ; episode ++) {
 			double eps = epsilon_greed * eps_strategy.epsilon(episode, epochs);
 			env.init();
 			if(episode%print_every == 0) {
-				System.out.println("Average reward over "+print_every+" : " + (reward/print_every));
+				System.out.println("Average reward over "+print_every+" : " + (cumulated_reward/print_every));
 				System.out.println("Average loss   over "+print_every+" : " + (loss/print_every));
 				
-				reward = 0;
+				local_reward = 0;
 				loss = 0;
 			}
 			//System.out.println("--");
@@ -96,7 +96,8 @@ public class QLearn {
 					a = net.forward(env.state.to_column_matrix()).get_column(0).argmax();
 				}
 				double reward = env.apply_action(a);
-				this.reward += reward;
+				this.cumulated_reward += reward;
+				local_reward += reward;
 				Vector after = env.get_state();
 				Experience e = new Experience();
 				e.s = previous;

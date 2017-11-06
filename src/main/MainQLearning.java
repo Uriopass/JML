@@ -15,7 +15,7 @@ public class MainQLearning {
 	
 	
 	public static void main(String[] args) {
-		/*System.out.println("Appuyez sur ENTER pour démarrer : ");
+		/*System.out.println("Appuyez sur ENTER pour dï¿½marrer : ");
 		try {
 			System.in.read();
 		} catch (IOException e) {
@@ -25,7 +25,7 @@ public class MainQLearning {
 
 		for(int i = 1 ; i < 10 ; i++) {
 			Parameters p = new Parameters("reg=0.00001");
-			Environment env = new ForwardTest(i);
+			Environment env = new GridWorld(8, 8);
 			MultiLayerPerceptron model = new MultiLayerPerceptron();
 			int hidden = 48;
 			model.add(new DenseLayer(env.state_size, hidden, 0, "tanh", false, p));		
@@ -35,8 +35,8 @@ public class MainQLearning {
 			
 			RandomGenerator.init(System.currentTimeMillis());
 			QLearn learner = new QLearn(model, env, 0.1, EpsilonFunction.constant);
-			learner.learn(1000, 2000);
-			System.out.println(learner.reward/1000);
+			learner.learn(1000, 100);
+			System.out.println(learner.cumulated_reward/1000);
 		}
 	}
 }

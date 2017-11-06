@@ -37,6 +37,9 @@ public class GridWorld extends Environment {
 		state.v[f * this.width * this.height + y* this.width + x] = value;
 	}
 	
+	public boolean is_wall(int x, int y) {
+		return get_state_v(WALL_LAYER, x, y) == 0;
+	}
 	
 	
 	@Override
@@ -99,7 +102,7 @@ public class GridWorld extends Environment {
 		int next_x = x_cur + x;
 		int next_y = y_cur + y;
 		if(next_x >= 0 && next_x < width && next_y >= 0 && next_y < height) {
-			if(get_state_v(WALL_LAYER, next_x, next_y) == 0) {
+			if(!is_wall(next_x, next_y)) {
 				set_state_v(PLAYER_LAYER, x_cur, y_cur, 0);
 				set_state_v(PLAYER_LAYER, next_x, next_y, 1);
 				x_cur = next_x;
