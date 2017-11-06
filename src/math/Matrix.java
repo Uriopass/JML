@@ -105,7 +105,6 @@ public class Matrix {
 	}
 
 	public static Matrix parralel_mult(Matrix A, Matrix B) {
-		
 		if (B.height != A.width) {
 			throw new RuntimeException(
 					"Incompatible shape with " + A.shape() + " and " + B.shape() + " " + A.width + " != " + B.height);
@@ -124,8 +123,6 @@ public class Matrix {
 		Matrix C = new Matrix(B.width, A.height);
 		ExecutorService executor = Executors.newFixedThreadPool(threadNumber);
 		List<Future<Matrix>> list = new ArrayList<Future<Matrix>>();
-
-		
 
 		// System.out.println(A.height+" "+part);
 		for (int i = 0; i < A.height; i += part) {

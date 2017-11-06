@@ -184,7 +184,53 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 		System.out.print("] ");
 		//System.out.println(biases[0] + " " + biases[1]);
 	}
+	
+	public Matrix confusion_matrix(Matrix data, int[] refs) {
+		Matrix end = forward(data);
+		Matrix confusion_matrix = new Matrix(end.height, end.height);
+		
+		for(int i = 0 ; i < refs.length ; i++) {
+			int correct = refs[i];
+			int predicted = end.get_column(i).argmax();
+			confusion_matrix.v[correct][predicted] += 1;
+		}
+		
+		return confusion_matrix;
+	}
 
+	public Matrix k_wrongest_data(Matrix data, int[] refs, int k) {
+		Matrix end = forward(data);
+		
+		Matrix wrongest = new Matrix(k, data.height);
+		
+		Vector wrongV = new Vector(data.width);
+		for(int i = 0 ; i < data.width ; i++) {
+			wrongV.v[i] = 1 - end.get_column(i).v[refs[i]];
+		}
+		
+		for(int i = 0 ; i < k ; i++) {
+			int wrongest_i = wrongV.argmax();
+			wrongest.set_column(i, data.get_column(wrongest_i));
+			wrongV.v[wrongest_i] = 0;
+		}
+		
+		return wrongest;
+	}
+	
+	public Matrix average_data_by_class(Matrix data) {
+		Matrix end = forward(data);
+		Matrix average = new Matrix(end.height, end.height);
+		
+		for(int i = 0 ; i < end.width ; i++) {
+			Vector v = end.get_column(i);
+			int argmax = v.argmax();
+			average.set_column(argmax, average.get_column(argmax).add(v));
+		}
+		average.scale(end.width);
+		
+		return average;
+	}
+	
 	// Compte le nombre de points classifiés correctement
 	public int correct_count(Matrix data, int[] refs) {
 		Matrix next = forward(data);
