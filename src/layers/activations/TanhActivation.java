@@ -1,6 +1,9 @@
 package layers.activations;
 
 public class TanhActivation extends ActivationLayer {
+	public TanhActivation() {
+		needs_cache_after = true;
+	}
 	
 	@Override
 	public double activation_forward(double in) {

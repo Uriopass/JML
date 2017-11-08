@@ -12,7 +12,7 @@ public class Initialisations {
 	}
 
 	public static void xavier(Matrix m, int fan_in, int fan_out) {
-		double var = Math.sqrt(2 / (fan_in + fan_out));
+		double var = Math.sqrt(2f / (fan_in + fan_out));
 		for (int i = 0; i < m.height; i++) {
 			for (int j = 0; j < m.width; j++) {
 				m.v[i][j] = RandomGenerator.gaussian(var);

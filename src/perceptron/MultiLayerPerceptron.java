@@ -28,13 +28,13 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	public int global_counter = 1;
 	public int last_correct_count = 0;
 
-	
-	public MultiLayerPerceptron(int...dims) {
-		init_layers(dims, true);
+	public MultiLayerPerceptron(int batch_size) {
+		layers = new ArrayList<FlatLayer>();
+		this.mini_batch = batch_size;
 	}
 	
-	public MultiLayerPerceptron() {
-		layers = new ArrayList<FlatLayer>();
+	public MultiLayerPerceptron(int[] dims) {
+		init_layers(dims, true);
 	}
 	
 	/**
@@ -201,7 +201,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 		for(int i = 0 ; i < refs.length ; i++) {
 			int correct = refs[i];
 			int predicted = end.get_column(i).argmax();
-			confusion_matrix.v[correct][predicted] += 1;
+			confusion_matrix.v[predicted][correct] += 1;
 		}
 		
 		return confusion_matrix;

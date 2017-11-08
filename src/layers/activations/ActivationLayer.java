@@ -8,7 +8,7 @@ import math.Vector;
 
 public abstract class ActivationLayer implements FlatLayer, FeatureLayer {
 	protected boolean needs_cache_before = false;
-	protected boolean needs_cache_after  = true;
+	protected boolean needs_cache_after  = false;
 	
 	public abstract double activation_forward(double in);
 	public abstract double activation_backward();
@@ -31,17 +31,17 @@ public abstract class ActivationLayer implements FlatLayer, FeatureLayer {
 			return f_cache_before.v[f].v[i][j];
 		if(v_cache_before != null)
 			return v_cache_before.v[i];
-		return 0;
+		throw new RuntimeException("Asking for before, but no before found");
 	}
 	
 	protected double get_after() {
-		if(m_cache_before != null)
+		if(m_cache_after != null)
 			return m_cache_after.v[i][j];
-		if(f_cache_before != null)
+		if(f_cache_after != null)
 			return f_cache_after.v[f].v[i][j];
-		if(v_cache_before != null)
+		if(v_cache_after != null)
 			return v_cache_after.v[i];
-		return 0;
+		throw new RuntimeException("Asking for after, but no after found");
 	}
 	
 	

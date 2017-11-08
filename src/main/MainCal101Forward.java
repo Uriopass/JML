@@ -23,7 +23,7 @@ public class MainCal101Forward {
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 5;
+	public final static int EPOCHMAX = 10;
 
 	public static final int N_t = 4100;
 
@@ -74,9 +74,9 @@ public class MainCal101Forward {
 	public static void main(String[] args) {
 		long time = System.currentTimeMillis();
 		RandomGenerator.init(seed);
-		model = new MultiLayerPerceptron();
+		model = new MultiLayerPerceptron(64);
 		load_data();
-		Parameters p = new Parameters("reg=0", "lr=0.005");
+		Parameters p = new Parameters("reg=0.0001", "lr=0.01");
 		model.add(new DenseLayer(trainData.height, 500, 0, "tanh", true, p));
 		model.add(new DenseLayer(500, 101, 0, "tanh", true, p));
 		model.add(new SoftmaxCrossEntropy());

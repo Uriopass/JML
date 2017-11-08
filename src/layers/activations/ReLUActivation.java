@@ -1,6 +1,10 @@
 package layers.activations;
 
 public class ReLUActivation extends ActivationLayer {
+	public ReLUActivation() {
+		needs_cache_after = true;
+	}
+	
 	@Override
 	public double activation_forward(double in) {
 		return Math.max(0, in);

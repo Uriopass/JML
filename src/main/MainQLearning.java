@@ -3,7 +3,6 @@ package main;
 import RL.EpsilonFunction;
 import RL.QLearn;
 import RL.environments.Environment;
-import RL.environments.ForwardTest;
 import RL.environments.GridWorld;
 import layers.Parameters;
 import layers.flat.DenseLayer;
@@ -26,7 +25,7 @@ public class MainQLearning {
 		for(int i = 1 ; i < 10 ; i++) {
 			Parameters p = new Parameters("reg=0.00001");
 			Environment env = new GridWorld(8, 8);
-			MultiLayerPerceptron model = new MultiLayerPerceptron();
+			MultiLayerPerceptron model = new MultiLayerPerceptron(64);
 			int hidden = 48;
 			model.add(new DenseLayer(env.state_size, hidden, 0, "tanh", false, p));		
 			// model.add(new GaussianNoise(0.05));

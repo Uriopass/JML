@@ -31,7 +31,7 @@ public class AffineLayer implements FlatLayer {
 		bias = new RMSVector(fan_out);
 		
 		if(init) {
-			Initialisations.he_uniform(weight, fan_in, p.getAsDouble("init_multiplier", 1));
+			Initialisations.xavier(weight, fan_in, fan_out);
 			
 			bias.fill(0);
 		}
@@ -43,8 +43,8 @@ public class AffineLayer implements FlatLayer {
 		this.regularization = p.getAsDouble("reg", 0);
 		this.learning_rate = p.getAsDouble("lr", 0.001);
 		this.learning_rate_decay = p.getAsDouble("lrdecay", 1);
-		this.gamma = p.getAsDouble("gamma", 0.9);
-		this.epsilon = p.getAsDouble("epsilon", 1e-8);
+		this.gamma = p.getAsDouble("gamma", 0.1);
+		this.epsilon = p.getAsDouble("epsilon", 1e-5);
 		this.calculate_dout = p.getAsString("dout", "true").equalsIgnoreCase("true");
 	}
 	

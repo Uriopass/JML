@@ -8,11 +8,15 @@ import java.util.Locale;
 import datareaders.MnistReader;
 import image.ImageConverter;
 import layers.Parameters;
+import layers.activations.SigmoidActivation;
 import layers.activations.SoftmaxActivation;
+import layers.activations.TanhActivation;
+import layers.flat.AffineLayer;
 import layers.flat.DenseLayer;
 import layers.flat.SplitAffineLayer;
 import layers.losses.EntropyLoss;
 import layers.losses.SoftmaxCrossEntropy;
+import math.Activations;
 import math.Matrix;
 import math.RandomGenerator;
 import perceptron.MultiLayerPerceptron;
@@ -27,11 +31,11 @@ public class MainMnistForward {
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 1;
+	public final static int EPOCHMAX = 10;
 
-	public static final int N_t = 10000;
+	public static final int N_t = 20000;
 
-	public static int T_t = 5000;
+	public static int T_t = 10000;
 
 	public static int N;
 	public static int T;
@@ -312,20 +316,16 @@ public class MainMnistForward {
 	}
 	*/
 
-
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
 		System.out.println("Appuyez sur ENTER pour d�marrer : ");
 		long time = System.currentTimeMillis();
 		RandomGenerator.init(seed);
-		model = new MultiLayerPerceptron();
+		model = new MultiLayerPerceptron(128);
 		load_data();
-		Parameters p = new Parameters("reg=0.0001", "lr=0.002", "dout=false");
-		model.add(new DenseLayer(784, 1000, 0, "tanh", true, p));
+		Parameters p = new Parameters("reg=0", "lr=0.001", "dout=false");
+		model.add(new AffineLayer(784, 10, true, p));
 		p.set("dout", "true");
-		model.add(new DenseLayer(1000, 10, 0, "tanh", false, p));
+		model.add(new SigmoidActivation());
 		model.add(new SoftmaxCrossEntropy());
 		/*
 		Parameters p = new Parameters("reg=0", "lr=0.001", "dout=false");
@@ -356,7 +356,8 @@ public class MainMnistForward {
 
 		//visualize_bottleneck("fig0");
 		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
-
+		model.confusion_matrix(trainData, trainRefs).print_values();
+		
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
 			model.epoch(trainData, trainRefs);
@@ -375,11 +376,11 @@ public class MainMnistForward {
 			System.out.print("test time " + df.format(test_forward_t) + "s");
 			System.out.println(" ETA " + df.format((EPOCHMAX - i) * (rms)) + "s");
 			model.confusion_matrix(trainData, trainRefs).print_values();
-			//model.write_weights("temp");
+			
 			System.out.println();
 		}
 		
-		((DenseLayer)model.layers.get(0)).al.weight.visualize("test", 28, 25, 40, true);
+		((AffineLayer)model.layers.get(0)).weight.visualize("test", 28, 1, 10, true);
 
 		for (double f : trainAccuracy) {
 			System.out.print(df.format(f) + ";");

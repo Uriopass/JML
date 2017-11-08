@@ -10,6 +10,7 @@ public class Optimizers {
 			for (int m = 0; m < acc.width; m++) {
 				acc.v[l][m] = gamma * acc.v[l][m]
 						+ (1 - gamma) * w_grad.v[l][m] * w_grad.v[l][m];
+				
 				w_grad.v[l][m] *= -lr / (Math.sqrt(eps + acc.v[l][m]));
 				w.v[l][m] += w_grad.v[l][m];
 				w_grad.v[l][m] = 0;
