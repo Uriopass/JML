@@ -473,7 +473,7 @@ public class Matrix {
 
 	public BufferedImage visualize(String name, int dimension, int f_w, int f_h, boolean write) {
 		if (f_w * f_h != height) {
-			throw new RuntimeException("Dimensions don't match height");
+			throw new RuntimeException("Dimensions don't match height "+f_w*f_h+" != "+height);
 		}
 		BufferedImage bf;
 		final int scale = 4;

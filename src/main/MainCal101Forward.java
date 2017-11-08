@@ -23,7 +23,7 @@ public class MainCal101Forward {
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 15;
+	public final static int EPOCHMAX = 5;
 
 	public static final int N_t = 4100;
 
@@ -38,8 +38,8 @@ public class MainCal101Forward {
 	public static long seed = System.currentTimeMillis();
 
 	public static void load_data() {
-		N = N_t - (N_t % model.mini_batch);
-		T = T_t - (T_t % model.mini_batch);
+		N = N_t;//- (N_t % model.mini_batch);
+		T = T_t;//- (T_t % model.mini_batch);
 
 		System.out.println("# Loading the database !");
 		trainData = new Matrix(N, 784);
@@ -68,6 +68,7 @@ public class MainCal101Forward {
 			if(i >= T)
 				break;
 		}
+		// testData.transpose().visualize("donnestest", 28, 50, 40, true);
 		System.out.println("# Test set " + T + " images");
 	}
 	
@@ -76,8 +77,9 @@ public class MainCal101Forward {
 		RandomGenerator.init(seed);
 		model = new MultiLayerPerceptron(64);
 		load_data();
-		Parameters p = new Parameters("reg=0.001", "lr=0.01");
-		model.add(new DenseLayer(trainData.height, 101, 0, "tanh", true, p));
+		Parameters p = new Parameters("reg=0", "lr=0.01");
+		model.add(new DenseLayer(trainData.height, 300, 0, "sigmoid", true, p));
+		model.add(new DenseLayer(300, 101, 0, "sigmoid", false, p));
 		model.add(new SoftmaxCrossEntropy());
 		System.out.println("# Model created with following architecture : ");
 		model.print_architecture();
@@ -116,7 +118,8 @@ public class MainCal101Forward {
 			System.out.println();
 		}
 		
-		((DenseLayer)model.layers.get(0)).al.weight.visualize("test", 28, 1, 101, true);
+		model.k_wrongest_data(testData, testRefs, 10).transpose().visualize("dur", 28, 10, 1, true);
+		//((DenseLayer)model.layers.get(0)).al.weight.visualize("test", 28, 1, 101, true);
 
 		for (double f : trainAccuracy) {
 			System.out.print(df.format(f) + ";");

@@ -12,6 +12,7 @@ import layers.activations.SigmoidActivation;
 import layers.activations.SoftmaxActivation;
 import layers.activations.TanhActivation;
 import layers.flat.AffineLayer;
+import layers.flat.BatchnormLayer;
 import layers.flat.DenseLayer;
 import layers.flat.SplitAffineLayer;
 import layers.losses.EntropyLoss;
@@ -33,7 +34,7 @@ public class MainMnistForward {
 	// Nombre d'epoque max
 	public final static int EPOCHMAX = 20;
 
-	public static final int N_t = 10000;
+	public static final int N_t = 20000;
 
 	public static int T_t = 10000;
 
@@ -320,12 +321,12 @@ public class MainMnistForward {
 		System.out.println("Appuyez sur ENTER pour d�marrer : ");
 		long time = System.currentTimeMillis();
 		RandomGenerator.init(seed);
-		model = new MultiLayerPerceptron(128);
+		model = new MultiLayerPerceptron(64);
 		load_data();
-		Parameters p = new Parameters("reg=0", "lr=0.001", "dout=false");
-		model.add(new AffineLayer(784, 10, true, p));
+		Parameters p = new Parameters("reg=0.0001", "lr=0.005", "dout=false");
+		model.add(new DenseLayer(784, 300, 0.3, "swish", true, p));
 		p.set("dout", "true");
-		model.add(new SigmoidActivation());
+		model.add(new DenseLayer(300, 10, 0, "swish", false, p));
 		model.add(new SoftmaxCrossEntropy());
 		/*
 		Parameters p = new Parameters("reg=0", "lr=0.001", "dout=false");
@@ -375,7 +376,7 @@ public class MainMnistForward {
 			System.out.print("epoch time " + df.format(rms) + "s");
 			System.out.print("test time " + df.format(test_forward_t) + "s");
 			System.out.println(" ETA " + df.format((EPOCHMAX - i) * (rms)) + "s");
-			model.confusion_matrix(trainData, trainRefs).print_values();
+			//model.confusion_matrix(trainData, trainRefs).print_values();
 			
 			System.out.println();
 		}

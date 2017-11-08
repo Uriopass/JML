@@ -219,6 +219,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 		
 		for(int i = 0 ; i < k ; i++) {
 			int wrongest_i = wrongV.argmax();
+			System.out.println(wrongV.v[wrongest_i]);
 			wrongest.set_column(i, data.get_column(wrongest_i));
 			wrongV.v[wrongest_i] = 0;
 		}

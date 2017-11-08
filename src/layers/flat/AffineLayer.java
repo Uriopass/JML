@@ -44,7 +44,7 @@ public class AffineLayer implements FlatLayer {
 		this.learning_rate = p.getAsDouble("lr", 0.001);
 		this.learning_rate_decay = p.getAsDouble("lrdecay", 1);
 		this.gamma = p.getAsDouble("gamma", 0.1);
-		this.epsilon = p.getAsDouble("epsilon", 1e-5);
+		this.epsilon = p.getAsDouble("epsilon", 1e-6);
 		this.calculate_dout = p.getAsString("dout", "true").equalsIgnoreCase("true");
 	}
 	

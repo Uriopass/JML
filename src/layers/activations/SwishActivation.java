@@ -4,6 +4,7 @@ public class SwishActivation extends ActivationLayer {
 	
 	public SwishActivation() {
 		needs_cache_before = true;
+		needs_cache_after = true;
 	}
 	
 	@Override
