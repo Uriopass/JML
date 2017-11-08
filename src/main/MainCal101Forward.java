@@ -23,7 +23,7 @@ public class MainCal101Forward {
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 10;
+	public final static int EPOCHMAX = 15;
 
 	public static final int N_t = 4100;
 
@@ -76,9 +76,8 @@ public class MainCal101Forward {
 		RandomGenerator.init(seed);
 		model = new MultiLayerPerceptron(64);
 		load_data();
-		Parameters p = new Parameters("reg=0.0001", "lr=0.01");
-		model.add(new DenseLayer(trainData.height, 500, 0, "tanh", true, p));
-		model.add(new DenseLayer(500, 101, 0, "tanh", true, p));
+		Parameters p = new Parameters("reg=0.001", "lr=0.01");
+		model.add(new DenseLayer(trainData.height, 101, 0, "tanh", true, p));
 		model.add(new SoftmaxCrossEntropy());
 		System.out.println("# Model created with following architecture : ");
 		model.print_architecture();
@@ -117,7 +116,7 @@ public class MainCal101Forward {
 			System.out.println();
 		}
 		
-		((DenseLayer)model.layers.get(0)).al.weight.visualize("test", 28, 25, 20, true);
+		((DenseLayer)model.layers.get(0)).al.weight.visualize("test", 28, 1, 101, true);
 
 		for (double f : trainAccuracy) {
 			System.out.print(df.format(f) + ";");

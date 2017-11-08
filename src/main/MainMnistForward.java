@@ -31,9 +31,9 @@ public class MainMnistForward {
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 10;
+	public final static int EPOCHMAX = 20;
 
-	public static final int N_t = 20000;
+	public static final int N_t = 10000;
 
 	public static int T_t = 10000;
 
