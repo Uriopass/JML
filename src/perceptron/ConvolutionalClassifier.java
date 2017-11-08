@@ -10,7 +10,8 @@ import layers.features.Flatten;
 import layers.features.Unflatten;
 import layers.flat.AffineLayer;
 import layers.flat.BatchnormLayer;
-import layers.flat.SoftmaxCrossEntropy;
+import layers.losses.Loss;
+import layers.losses.SoftmaxCrossEntropy;
 import math.FeatureMatrix;
 import math.Matrix;
 import math.Vector;
@@ -68,8 +69,11 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 					} 
 				}
 				//long time = System.currentTimeMillis();
+				for(double d : next_m.argmax(Matrix.AXIS_HEIGHT).add(new Vector(refs).scale(-1)).v) {
+					last_correct_count += Math.abs(d) < 1e-8 ? 1 : 0;
+				}
 				
-				((SoftmaxCrossEntropy)layers.get(layers.size()-1)).feedrefs(new int[] {ref});
+				getLoss().feed_ref(Loss.from_int_refs(new int[] {ref}, next_m.height));
 				for(int l_ind = layers.size()-1 ; l_ind >= 0 ; l_ind--) {
 					Layer l = layers.get(l_ind);
 					if(l instanceof FlatLayer) {
@@ -89,8 +93,7 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 					} 
 				}
 				//System.out.println(System.currentTimeMillis()-time);
-				last_correct_count += ((SoftmaxCrossEntropy) layers.get(layers.size()-1)).correct;
-				last_average_loss += ((SoftmaxCrossEntropy) layers.get(layers.size()-1)).loss;
+				last_average_loss += getLoss().loss;
 			}
 			last_average_loss /= mini_batch;
 			//System.out.println(last_correct_count);
@@ -119,10 +122,11 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 
 	public double correct_count(Matrix data, int[] refs) {
 		Matrix next = forward(data);
-		SoftmaxCrossEntropy sf = ((SoftmaxCrossEntropy)(layers.get(layers.size()-1)));
-		sf.feedrefs(refs);
-		sf.backward(next);
-		return sf.correct;
+		int correct = 0;
+		for(double d : next.argmax(Matrix.AXIS_HEIGHT).add(new Vector(refs).scale(-1)).v) {
+			correct += Math.abs(d) < 1e-8 ? 1 : 0;
+		}
+		return correct;
 	}
 	
 }

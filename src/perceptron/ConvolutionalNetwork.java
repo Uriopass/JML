@@ -1,17 +1,26 @@
 package perceptron;
 
+import java.util.ArrayList;
+
 import layers.FeatureLayer;
 import layers.FlatLayer;
 import layers.Layer;
 import layers.features.Flatten;
 import layers.features.Unflatten;
+import layers.losses.Loss;
 import math.FeatureMatrix;
 import math.Matrix;
 
 public class ConvolutionalNetwork extends FeedForwardNetwork {
+	ArrayList<Layer> layers;
 	int mini_batch = 0;
 	public ConvolutionalNetwork(int mini_batch) {
 		this.mini_batch = mini_batch;
+		layers = new ArrayList<>();
+	}
+	
+	public void addLayer(Layer l) {
+		layers.add(l);
 	}
 	
 	@Override
@@ -43,5 +52,16 @@ public class ConvolutionalNetwork extends FeedForwardNetwork {
 			result.set_column(i, next_m.get_column(0));
 		}
 		return result;
+	}
+
+	@Override
+	public Loss getLoss() {
+		return (Loss)layers.get(layers.size()-1);
+	}
+	@Override
+	public void print_architecture() {
+		for(Layer l : layers) {
+			System.out.println("# - "+l);
+		}
 	}
 }

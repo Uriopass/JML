@@ -8,20 +8,19 @@ import java.util.Collections;
 
 import javax.imageio.ImageIO;
 
-import layers.EntropyLoss;
+import layers.FlatLayer;
 import layers.Layer;
 import layers.flat.AffineLayer;
 import layers.flat.BatchnormLayer;
-import layers.FlatLayer;
+import layers.losses.Loss;
 import math.Matrix;
 import math.Vector;
 
 public class AutoEncoder extends FeedForwardNetwork {
 	ArrayList<FlatLayer> layers;
 	
-	@Override
-	public void add(Layer l) {
-		layers.add((FlatLayer)l);
+	public void add(FlatLayer l) {
+		layers.add(l);
 	}
 	
 	@Override
@@ -98,13 +97,14 @@ public class AutoEncoder extends FeedForwardNetwork {
 			}
 			
 			Matrix dout = batch;
-			((EntropyLoss) layers.get(layers.size()-1)).feed_ref(batch_init);
+			Loss l = getLoss();
+			l.feed_ref(batch_init);
 			
 			for(int j = layers.size()-1 ; j >= 0 ; j--) {
 				dout = layers.get(j).backward(dout);
 				layers.get(j).apply_gradient();
 			}
-			last_average_loss += ((EntropyLoss) layers.get(layers.size()-1)).loss;
+			last_average_loss += l.loss;
 		}
 		last_average_loss /= data.width / mini_batch;
 		
@@ -118,5 +118,16 @@ public class AutoEncoder extends FeedForwardNetwork {
 		}
 		System.out.print("] ");
 	}
-
+	
+	@Override
+	public Loss getLoss() {
+		return (Loss) layers.get(layers.size()-1);
+	}
+	
+	@Override
+	public void print_architecture() {
+		for(Layer l : layers) {
+			System.out.println("# - "+l);
+		}
+	}
 }

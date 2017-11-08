@@ -16,6 +16,19 @@ public class Vector {
 		this.length = length;
 	}
 
+	public Vector(double[] data) {
+		v = data;
+		length = v.length;
+	}
+
+	public Vector(int[] refs) {
+		length = refs.length;
+		v = new double[length];
+		for(int i = 0 ; i < length ; i++) {
+			v[i] = refs[i];
+		}
+	}
+
 	public Vector dot(Vector b) {
 		return dot(this, b);
 	}
@@ -207,6 +220,14 @@ public class Vector {
 		for (int i = 0; i < v.length; i++) {
 			v[i] = value;
 		}
+	}
+
+	public double sum() {
+		double sum = 0;
+		for(int i = 0 ; i < v.length ; i++) {
+			sum += v[i];
+		}
+		return sum;
 	}
 
 }

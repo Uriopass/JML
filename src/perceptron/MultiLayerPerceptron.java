@@ -12,7 +12,8 @@ import layers.Parameters;
 import layers.activations.TanhActivation;
 import layers.flat.AffineLayer;
 import layers.flat.BatchnormLayer;
-import layers.flat.SoftmaxCrossEntropy;
+import layers.losses.Loss;
+import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.Vector;
 
@@ -20,9 +21,8 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 
 	public ArrayList<FlatLayer> layers;
 	
-	@Override
-	public void add(Layer l) {
-		layers.add((FlatLayer)l);
+	public void add(FlatLayer l) {
+		layers.add(l);
 	}
 	
 	public int global_counter = 1;
@@ -134,6 +134,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	}
 	
 	public void epoch(Matrix data, int[] refs) {
+		last_average_loss = 0;
 		last_correct_count = 0;
 		ArrayList<Integer> ints = new ArrayList<Integer>();
 		ArrayList<Vector> columns = new ArrayList<Vector>();
@@ -150,9 +151,10 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 		for (int i = 0; i < data.width / mini_batch; i++) {
 			Matrix batch = new Matrix(mini_batch, data.height);
 			int[] refs_v = new int[mini_batch];
-			
-			if (i % tenth == 0)
-				System.out.print("=");
+			if(tenth != 0) {
+				if (i % tenth == 0)
+					System.out.print("=");
+			}
 			
 			//ImagePerceptron.visualizeClusterImage("sigvisu4/fig"+(global_counter++));
 			//System.out.println("start");
@@ -164,12 +166,19 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			
 			batch = forward_train(batch);
 			
+			for(double d : batch.argmax(Matrix.AXIS_HEIGHT).add(new Vector(refs_v).scale(-1)).v) {
+				if(Math.abs(d) < 1e-8) {
+					last_correct_count += 1;
+				}
+			}
+			
 			Matrix dout = batch;
-			((SoftmaxCrossEntropy) layers.get(layers.size()-1)).feedrefs(refs_v);
+			Loss l = getLoss();
+			l.feed_ref(Loss.from_int_refs(refs_v, dout.height));
 			
 			backward_train(dout);
-			last_correct_count += ((SoftmaxCrossEntropy) layers.get(layers.size()-1)).correct;
-			last_average_loss += ((SoftmaxCrossEntropy) layers.get(layers.size()-1)).loss;
+			
+			last_average_loss += l.loss;
 		}
 		last_average_loss /= data.width / mini_batch;
 		
@@ -234,12 +243,12 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	// Compte le nombre de points classifiés correctement
 	public int correct_count(Matrix data, int[] refs) {
 		Matrix next = forward(data);
-		SoftmaxCrossEntropy sf = ((SoftmaxCrossEntropy)(layers.get(layers.size()-1)));
-		sf.feedrefs(refs);
-		sf.backward(next);
-		return sf.correct;
+		int zeros = 0;
+		for(double d : next.argmax(Matrix.AXIS_HEIGHT).add(new Vector(refs).scale(-1)).v) {
+			zeros += Math.abs(d) < 1e-8 ? 1 : 0;
+		}
+		return zeros;
 	}
-	
 	
 	public void write_weights(String name) {
 		try {
@@ -284,7 +293,10 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			e.printStackTrace();
 		}
 	}
-	
+	@Override
+	public Loss getLoss() {
+		return (Loss)layers.get(layers.size()-1);
+	}
 	@Override
 	public void print_architecture() {
 		for(Layer l : layers) {

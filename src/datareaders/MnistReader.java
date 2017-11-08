@@ -1,4 +1,4 @@
-package mnist;
+package datareaders;
 
 import static java.lang.String.format;
 

@@ -38,6 +38,14 @@ public class Matrix {
 		}
 	}
 
+	public static Matrix identity(int size) {
+		Matrix id = new Matrix(size, size);
+		for(int i = 0 ; i < size ; i++) {
+			id.v[i][i] = 1;
+		}
+		return id;
+	}
+	
 	public Matrix mult(Matrix b) {
 		return Matrix.mult(this, b);
 	}
@@ -558,5 +566,23 @@ public class Matrix {
 			}
 		}
 		return sum;
+	}
+
+	public Vector argmax(int axis) {
+		if(axis == Matrix.AXIS_HEIGHT) {
+			Vector v = new Vector(this.width);
+			for(int i = 0 ; i < this.width ; i++) {
+				v.v[i] = this.get_column(i).argmax();
+			}
+			return v;
+		}
+		if(axis == Matrix.AXIS_WIDTH) {
+			Vector v = new Vector(this.height);
+			for(int i = 0 ; i < this.height ; i++) {
+				v.v[i] = this.get_row(i).argmax();
+			}
+			return v;
+		}
+		return null;
 	}
 }

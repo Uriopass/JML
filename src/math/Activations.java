@@ -16,7 +16,7 @@ public abstract class Activations {
 	}
 
 	public static Matrix softmax(Matrix activations, int axis) {
-		if (axis == 0) {
+		if (axis == Matrix.AXIS_WIDTH) {
 			for (int j = 0; j < activations.height; j++) {
 				double max = activations.get_row(j).max();
 
@@ -31,7 +31,7 @@ public abstract class Activations {
 			}
 			return activations;
 		}
-		if (axis == 1) {
+		if (axis == Matrix.AXIS_HEIGHT) {
 			for (int j = 0; j < activations.width; j++) {
 				double max = activations.get_column(j).max();
 

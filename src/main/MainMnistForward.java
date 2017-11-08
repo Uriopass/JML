@@ -5,17 +5,19 @@ import java.text.DecimalFormatSymbols;
 import java.util.List;
 import java.util.Locale;
 
+import datareaders.MnistReader;
 import image.ImageConverter;
 import layers.Parameters;
+import layers.activations.SoftmaxActivation;
 import layers.flat.DenseLayer;
-import layers.flat.SoftmaxCrossEntropy;
 import layers.flat.SplitAffineLayer;
+import layers.losses.EntropyLoss;
+import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
-import mnist.MnistReader;
 import perceptron.MultiLayerPerceptron;
 
-public class MainForward {
+public class MainMnistForward {
 
 	/* Les donnees */
 	public static String path = "";
@@ -25,9 +27,9 @@ public class MainForward {
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 10;
+	public final static int EPOCHMAX = 1;
 
-	public static final int N_t = 50000;
+	public static final int N_t = 10000;
 
 	public static int T_t = 5000;
 
@@ -36,14 +38,13 @@ public class MainForward {
 
 	public static Matrix trainData, testData;
 	public static int[] trainRefs, testRefs;
-	public static int SIZEW;
 
 	public static long seed = System.currentTimeMillis();
 
 	public static final int[][] colors = { { 200, 32, 32 }, { 128, 128, 64 }, { 128, 110, 255 }, { 255, 255, 0 },
 			{ 255, 0, 255 }, { 192, 255, 32 }, { 0, 0, 255 }, { 255, 255, 255 }, { 64, 128, 255 }, { 255, 128, 64 }, };
 
-	public static void load_mnist_data() {
+	public static void load_data() {
 		N = N_t - (N_t % model.mini_batch);
 		T = T_t - (T_t % model.mini_batch);
 
@@ -53,7 +54,7 @@ public class MainForward {
 		int[] refs = MnistReader.getLabels(labelDB);
 		System.out.println("# Database loaded !");
 		/* Taille des images et donc de l'espace de representation */
-		SIZEW = ImageConverter.image2VecteurReel(images.get(0)).length;
+		int SIZEW = ImageConverter.image2VecteurReel(images.get(0)).length;
 
 		/* Creation des donnees */
 		trainData = new Matrix(SIZEW, N);
@@ -320,11 +321,11 @@ public class MainForward {
 		long time = System.currentTimeMillis();
 		RandomGenerator.init(seed);
 		model = new MultiLayerPerceptron();
-		load_mnist_data();
-		Parameters p = new Parameters("reg=0.0001", "lr=0.001", "dout=false");
-		model.add(new DenseLayer(784, 1000, 0.4, "tanh", true, p));
+		load_data();
+		Parameters p = new Parameters("reg=0.0001", "lr=0.002", "dout=false");
+		model.add(new DenseLayer(784, 1000, 0, "tanh", true, p));
 		p.set("dout", "true");
-		model.add(new SplitAffineLayer(1000, 10, true, p));
+		model.add(new DenseLayer(1000, 10, 0, "tanh", false, p));
 		model.add(new SoftmaxCrossEntropy());
 		/*
 		Parameters p = new Parameters("reg=0", "lr=0.001", "dout=false");
@@ -363,16 +364,17 @@ public class MainForward {
 			//visualize_bottleneck("fig"+i);
 			double rms = (System.currentTimeMillis() - t) / 1000.;
 			t = System.currentTimeMillis();
-			testAccuracy[i] = 100 - (100. * model.correct_count(testData, testRefs)) / T;
+			testAccuracy[i] = (100. * model.correct_count(testData, testRefs)) / T;
 			double test_forward_t = (System.currentTimeMillis() - t) / 1000.;
-			trainAccuracy[i] = 100 - (100. * model.last_correct_count) / N;
+			trainAccuracy[i] = (100. * model.last_correct_count) / N;
 			System.out.print(i + ((i >= 10) ? " " : "  "));
-			System.out.print("Top 1 error rates (train, test) : " + df.format(trainAccuracy[i]) + "% "
+			System.out.print("Top 1 accuracy (train, test) : " + df.format(trainAccuracy[i]) + "% "
 					+ df.format(testAccuracy[i]) + "% ");
 			System.out.print("loss " + model.last_average_loss + "\t");
 			System.out.print("epoch time " + df.format(rms) + "s");
 			System.out.print("test time " + df.format(test_forward_t) + "s");
 			System.out.println(" ETA " + df.format((EPOCHMAX - i) * (rms)) + "s");
+			model.confusion_matrix(trainData, trainRefs).print_values();
 			//model.write_weights("temp");
 			System.out.println();
 		}

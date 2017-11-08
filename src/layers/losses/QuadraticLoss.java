@@ -1,8 +1,8 @@
-package layers;
+package layers.losses;
 
 import math.Matrix;
 
-public class QuadraticLoss implements FlatLayer {
+public class QuadraticLoss extends Loss {
 	
 	Matrix ref;
 	public double loss;
@@ -10,10 +10,6 @@ public class QuadraticLoss implements FlatLayer {
 	@Override
 	public Matrix forward(Matrix in, boolean training) {
 		return in;
-	}
-
-	public void feed_ref(Matrix ref) {
-		this.ref = ref;
 	}
 	
 	@Override

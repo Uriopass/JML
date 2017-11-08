@@ -3,7 +3,7 @@ package RL;
 import java.util.ArrayList;
 
 import RL.environments.Environment;
-import layers.QuadraticLoss;
+import layers.losses.Loss;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
@@ -68,9 +68,10 @@ public class QLearn {
 		for(int i = 0 ; i < mini_batch ; i++) {
 			result.v[experiences.get(sample[i]).a][i] = refs.v[i];
 		}
-		((QuadraticLoss)net.layers.get(net.layers.size()-1)).feed_ref(result);
+		Loss ql = net.getLoss();
+		ql.feed_ref(result);
 		net.backward_train(dout);
-		loss += ((QuadraticLoss)net.layers.get(net.layers.size()-1)).loss;
+		loss += ql.loss;
 	}
 	
 	public void learn(int epochs, int print_every) {
@@ -79,7 +80,7 @@ public class QLearn {
 			double eps = epsilon_greed * eps_strategy.epsilon(episode, epochs);
 			env.init();
 			if(episode%print_every == 0) {
-				System.out.println("Average reward over "+print_every+" : " + (cumulated_reward/print_every));
+				System.out.println("Average reward over "+print_every+" : " + (local_reward/print_every));
 				System.out.println("Average loss   over "+print_every+" : " + (loss/print_every));
 				
 				local_reward = 0;

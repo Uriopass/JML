@@ -6,8 +6,8 @@ import RL.environments.Environment;
 import RL.environments.ForwardTest;
 import RL.environments.GridWorld;
 import layers.Parameters;
-import layers.QuadraticLoss;
 import layers.flat.DenseLayer;
+import layers.losses.QuadraticLoss;
 import math.RandomGenerator;
 import perceptron.MultiLayerPerceptron;
 
