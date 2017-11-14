@@ -9,6 +9,10 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Cette classe qui est la seule classe récupérée sur internet permet de parser
+ * la base de donnée MNIST de manière très rapide.
+ */
 public class MnistReader {
 	public static final int LABEL_FILE_MAGIC_NUMBER = 2049;
 	public static final int IMAGE_FILE_MAGIC_NUMBER = 2051;

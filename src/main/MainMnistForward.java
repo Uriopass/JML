@@ -1,5 +1,6 @@
 package main;
 
+import java.io.File;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.List;
@@ -9,389 +10,198 @@ import datareaders.MnistReader;
 import image.ImageConverter;
 import layers.Parameters;
 import layers.activations.SigmoidActivation;
-import layers.activations.SoftmaxActivation;
-import layers.activations.TanhActivation;
 import layers.flat.AffineLayer;
-import layers.flat.BatchnormLayer;
-import layers.flat.DenseLayer;
-import layers.flat.SplitAffineLayer;
-import layers.losses.EntropyLoss;
 import layers.losses.SoftmaxCrossEntropy;
-import math.Activations;
 import math.Matrix;
 import math.RandomGenerator;
+import perceptron.MLPMetrics;
 import perceptron.MultiLayerPerceptron;
 
 public class MainMnistForward {
 
-	/* Les donnees */
-	public static String path = "";
-	public static String labelDB = path + "train-labels.idx1-ubyte";
-	public static String imageDB = path + "train-images.idx3-ubyte";
+	// Chemin vers les données
+	static String path = "";
+	static String train_labelDB = path + "train-labels-idx1-ubyte";
+	static String train_imageDB = path + "train-images-idx3-ubyte";
 
+	static String test_labelDB = path + "test-labels-idx1-ubyte";
+	static String test_imageDB = path + "test-images-idx3-ubyte";
+	
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
 	public final static int EPOCHMAX = 20;
 
-	public static final int N_t = 20000;
+	// Nombre de données d'entrainements
+	public static final int N = 50000;
+	// Nombre de données de validation
+	public static final int V = 10000;
 
-	public static int T_t = 10000;
+	// Nombre de données de test
+	public static int T = 10000;
 
-	public static int N;
-	public static int T;
+	// Matrices de données
+	public static Matrix train_data, validation_data, test_data;
+	// Tableaux de références
+	public static int[] train_refs, validation_refs, test_refs;
 
-	public static Matrix trainData, testData;
-	public static int[] trainRefs, testRefs;
-
+	// Seed utilisé pour la reproducibilité
 	public static long seed = System.currentTimeMillis();
 
-	public static final int[][] colors = { { 200, 32, 32 }, { 128, 128, 64 }, { 128, 110, 255 }, { 255, 255, 0 },
-			{ 255, 0, 255 }, { 192, 255, 32 }, { 0, 0, 255 }, { 255, 255, 255 }, { 64, 128, 255 }, { 255, 128, 64 }, };
-
 	public static void load_data() {
-		N = N_t - (N_t % model.mini_batch);
-		T = T_t - (T_t % model.mini_batch);
-
 		System.out.println("# Loading the database !");
 		/* Lecteur d'image */
-		List<int[][]> images = MnistReader.getImages(imageDB);
-		int[] refs = MnistReader.getLabels(labelDB);
+		
+		if(!new File(train_imageDB).exists())
+			throw new RuntimeException(train_imageDB+" not found");
+		if(!new File(test_imageDB).exists())
+			throw new RuntimeException(test_imageDB+" not found");
+		if(!new File(train_labelDB).exists())
+			throw new RuntimeException(train_labelDB+" not found");
+		if(!new File(test_imageDB).exists())
+			throw new RuntimeException(test_labelDB+" not found");
+		
+		
+		List<int[][]> train_images = MnistReader.getImages(train_imageDB);
+		int[] all_train_refs = MnistReader.getLabels(train_labelDB);
+
+		List<int[][]> test_images = MnistReader.getImages(test_imageDB);
+		int[] all_test_refs = MnistReader.getLabels(test_labelDB);
 		System.out.println("# Database loaded !");
+
 		/* Taille des images et donc de l'espace de representation */
-		int SIZEW = ImageConverter.image2VecteurReel(images.get(0)).length;
+		int SIZEW = 28 * 28;
 
 		/* Creation des donnees */
-		trainData = new Matrix(SIZEW, N);
-		trainRefs = new int[N];
-		int cpt = 0;
-		/* Donnees d'apprentissage */
-		for (int l = 0; l < N; l++) {
-			cpt++;
-			trainData.v[l] = ImageConverter.image2VecteurReel_withB(images.get(l));
-			int label = refs[l];
-			trainRefs[l] = label;
+		train_data = new Matrix(SIZEW, N);
+		train_refs = new int[N];
+
+		validation_data = new Matrix(SIZEW, V);
+		validation_refs = new int[V];
+		
+		final int TOTAL = train_images.size();
+		if (N + V > TOTAL) {
+			throw new RuntimeException("N+V (" + (N + V) + ") > Total (" + TOTAL + ")");
 		}
 
-		System.out.println("# Train set " + cpt + " images");
+		/* Donnees d'apprentissage */
+		for (int l = 0; l < N + V; l++) {
+			int label = all_train_refs[l];
+			double[] image = ImageConverter.image2VecteurReel(train_images.get(l));
+			if (l < N) {
+				train_data.v[l] = image;
+				train_refs[l] = label;
+			} else {
+				validation_data.v[l - N] = image;
+				validation_refs[l - N] = label;
+			}
+		}
+
+		System.out.println("# Train/Validation set built with " + N + "/" + V + " images");
 
 		/* Donnees de test */
 		System.out.println("# Build test");
-		cpt = 0;
-		final int TOTAL = images.size();
-		if (N + T > TOTAL) {
-			System.err.println("N+T (" + (N + T) + ") > Total (" + TOTAL + ")");
-			throw new RuntimeException();
-		}
-		testData = new Matrix(SIZEW, T);
-		testRefs = new int[T];
+
+		test_data = new Matrix(SIZEW, T);
+		test_refs = new int[T];
 		for (int i = 0; i < T; i++) {
-			cpt++;
-			testData.v[i] = ImageConverter.image2VecteurReel_withB(images.get(N + i));
-			int label = refs[N + i];
-			testRefs[i] = label;
+			test_data.v[i] = ImageConverter.image2VecteurReel(test_images.get(i));
+			int label = all_test_refs[i];
+			test_refs[i] = label;
 		}
-		System.out.println("# Test set " + cpt + " images");
-		trainData = trainData.transpose();
-		testData = testData.transpose();
+		System.out.println("# Test set built with " + T + " images");
+		train_data = train_data.transpose();
+		validation_data = validation_data.transpose();
+		test_data = test_data.transpose();
 	}
-	/*
-	public static void visualize_bottleneck(String name) {
-		int cellsize = 10;
-		int imnum = T;
-		int height = 1000;
-		height = height - height % cellsize;
-		int width = (int) (height * 16f / 9f);
-		width = width - width % cellsize;
-		int widthcell = width / cellsize;
-		int heightcell = height / cellsize;
-		int bottleneckdim = 3;
-	
-		ArrayList<Integer> ints = new ArrayList<Integer>();
-		ArrayList<Vector> columns = new ArrayList<Vector>();
-		int[] refs = new int[imnum];
-		for (int i = 0; i < testData.width; i++) {
-			ints.add(i);
-			columns.add(testData.get_column(i));
-		}
-		Matrix batch = new Matrix(imnum, trainData.height);
-		
-		for (int j = 0; j < imnum; j++) {
-			int indice = ints.get(j);
-			batch.set_column(j, columns.get(indice));
-			refs[j] = testRefs[indice];
-		}
-		int visu_layer = -1;
-		for (int i = 0; i < model.layers.size() ; i++) {
-			FlatLayer l = model.layers.get(i);
-			if(l instanceof AffineLayer) {
-				if (((AffineLayer)l).weight.height == bottleneckdim) {
-					visu_layer = i + 2;
-				}	
-			}
-		}
-		if(visu_layer == -1)
-			return;
-		Matrix batch_cp = new Matrix(batch);
-		for (int k = 0; k < visu_layer; k++) {
-			batch = model.layers.get(k).forward(batch, false);
-		}
-		/*
-		Matrix final_pos = new Matrix(batch);
-		for (int k = visu_layer; k < model.layers.size(); k++) {
-			final_pos = model.layers.get(k).forward(final_pos, false);
-		}
-		*/
-	/*
-	double max = 1.1;//batch.getRow(0).max();
-	double min = -1.1;//batch.getRow(0).min();
-	/*
-	Matrix all = new Matrix(widthcell * heightcell, 2);
-	for (int i = 0; i < heightcell; i++) {
-		for (int j = 0; j < widthcell; j++) {
-			all.v[0][i * widthcell + j] = minx + (maxx - minx) * ((float) (j) / widthcell);
-			all.v[1][i * widthcell + j] = miny + (maxy - miny) * ((float) (i) / heightcell);
-		}
-	}
-	//System.out.println(model.dims.length);
-	for (int k = visu_layer; k < model.layers.size(); k++) {
-		all = model.layers.get(k).forward(all, false);
-	}
-	*/
-	/*
-		BufferedImage bf;
-		if(bottleneckdim == 2) {
-			bf = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-	
-			Vector dec1 = new Vector(bottleneckdim);
-			dec1.v[0] = -min;
-			dec1.v[1] = -min;
-			Vector scl = new Vector(bottleneckdim);
-			scl.v[0] = (width) / (max - min);
-			scl.v[1] = (height) / (max - min);
-			for (int i = 0; i < height; i++) {
-				for (int j = 0; j < width; j++) {
-					//int indice = (i / cellsize) * widthcell + (j / cellsize);
-					//int classe = all.get_column(indice).argmax();
-					//double confidence = all.get_column(indice).v[classe];
-					//System.out.println(classe);
-					//int[] color = colors[classe];
-					int r = 32;//(int) ((color[0] * confidence));
-					int g = 32;//(int) ((color[1] * confidence));
-					int b = 32;//(int) ((color[2] * confidence));
-					int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
-	
-					bf.setRGB(j, i, rgb);
-				}
-			}
-			for (int i = 0; i < imnum; i++) {
-				Vector init = batch_cp.get_column(i);
-				Vector arrival = batch.get_column(i);
-				//Vector theend = final_pos.get_column(i);
-				int classe = testRefs[i];
-				//double confidence = theend.v[classe];
-				boolean isGoodClasse = classe == refs[i];
-	
-				arrival.add(dec1);
-				arrival.scale(scl);
-				for (int j = 0; j < 28; j++) {
-					for (int k = 0; k < 28; k++) {
-						int x = (int) (k - 14 + arrival.v[0]);
-						int y = (int) (j - 14 + arrival.v[1]);
-						if (x >= 0 && x < width && y >= 0 && y < height) {
-							int indice = 28 * j + k;
-							double color = init.v[indice];
-	
-							int oldcolor = bf.getRGB(x, y);
-							float oldr = ((oldcolor >> 16) & 0xFF) / 255f;
-							float oldg = ((oldcolor >> 8) & 0xFF) / 255f;
-							float oldb = ((oldcolor >> 0) & 0xFF) / 255f;
-	
-							double newr = colors[classe][0]/255.0;//color;
-							double newg = colors[classe][1]/255.0;//color;
-							double newb = colors[classe][2]/255.0;//color;
-							/*
-							if (isGoodClasse) {
-								newg = 1;
-							} else {
-								newr = 1;
-							}
-							*/
-	/*
-							double blend = color;//confidence * color;
-							int r = (int) ((blend * newr + (1 - blend) * oldr) * 255);
-							int g = (int) ((blend * newg + (1 - blend) * oldg) * 255);
-							int b = (int) ((blend * newb + (1 - blend) * oldb) * 255);
-							int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
-	
-							bf.setRGB(x, y, rgb);
-	
-						}
-					}
-				}
-			}
-		}
-		else if (bottleneckdim==3) {
-			bf = new BufferedImage(width, height*3, BufferedImage.TYPE_INT_ARGB);
-			
-			Vector dec1 = new Vector(2);
-			dec1.v[0] = -min;
-			dec1.v[1] = -min;
-			Vector scl = new Vector(2);
-			scl.v[0] = (width) / (max - min);
-			scl.v[1] = (height) / (max - min);
-			for (int i = 0; i < height*3; i++) {
-				for (int j = 0; j < width; j++) {
-					//int indice = (i / cellsize) * widthcell + (j / cellsize);
-					//int classe = all.get_column(indice).argmax();
-					//double confidence = all.get_column(indice).v[classe];
-					//System.out.println(classe);
-					//int[] color = colors[classe];
-					int r = 32;//(int) ((color[0] * confidence));
-					int g = 32;//(int) ((color[1] * confidence));
-					int b = 32;//(int) ((color[2] * confidence));
-					int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
-	
-					bf.setRGB(j, i, rgb);
-				}
-			}
-			for (int i = 0; i < imnum; i++) {
-				Vector init = batch_cp.get_column(i);
-				Vector arrival = batch.get_column(i);
-				//Vector theend = final_pos.get_column(i);
-				int classe = testRefs[i];
-				//double confidence = theend.v[classe];
-				boolean isGoodClasse = classe == refs[i];
-				for(int dim = 0 ; dim < 3 ; dim++) {
-					for (int j = 0; j < 28; j++) {
-						for (int k = 0; k < 28; k++) {
-							Vector arr = new Vector(2);
-							arr.v[0] = arrival.v[dim];
-							arr.v[1] = arrival.v[(dim+1)%3];
-							arr.add(dec1);
-							arr.scale(scl);
-							
-							int x = (int) (k - 14 + arr.v[0]);
-							int y = (int) (j - 14 + arr.v[1]);
-							if (x >= 0 && x < width && y >= 0 && y < height) {
-								int indice = 28 * j + k;
-								double color = init.v[indice];
-		
-								int oldcolor = bf.getRGB(x, y);
-								float oldr = ((oldcolor >> 16) & 0xFF) / 255f;
-								float oldg = ((oldcolor >> 8) & 0xFF) / 255f;
-								float oldb = ((oldcolor >> 0) & 0xFF) / 255f;
-		
-								double newr = colors[classe][0]/255.0;//color;
-								double newg = colors[classe][1]/255.0;//color;
-								double newb = colors[classe][2]/255.0;//color;
-								/*
-								if (isGoodClasse) {
-									newg = 1;
-								} else {
-									newr = 1;
-								}
-								*/
-	/*
-							double blend = color;//confidence * color;
-							int r = (int) ((blend * newr + (1 - blend) * oldr) * 255);
-							int g = (int) ((blend * newg + (1 - blend) * oldg) * 255);
-							int b = (int) ((blend * newb + (1 - blend) * oldb) * 255);
-							int rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
-	
-							bf.setRGB(x, y+dim*height, rgb);
-	
-						}
-					}
-				}
-			}
-		}
-	} else {
-		return;
-	}
-	try {
-		ImageIO.write(bf, "png", new File(name + ".png"));
-	} catch (IOException e) {
-		e.printStackTrace();
-	}
-	}
-	*/
 
 	public static void main(String[] args) {
-		System.out.println("Appuyez sur ENTER pour dï¿½marrer : ");
+		// On initialise le générateur aléatoire
 		long time = System.currentTimeMillis();
+		seed = 1510437982659L;
 		RandomGenerator.init(seed);
-		model = new MultiLayerPerceptron(64);
+		System.out.println("# Seed : " + seed);
+
+		// On crée notre modèle vide avec un mini_batch de 40
+		model = new MultiLayerPerceptron(40);
 		load_data();
-		Parameters p = new Parameters("reg=0.0001", "lr=0.005", "dout=false");
-		model.add(new DenseLayer(784, 300, 0.3, "swish", true, p));
+		// Paramètres du modele
+		Parameters p = new Parameters("reg=0.00005", "lr=0.005");
+
+		// Modèle classique à 4 couches (entrée + cachée + cachée + sortie) avec 1000 et 100 neurones intermédiaires et des activations en sigmoide
+		
+		// Dout est inutile pour la première couche
+		p.set("dout", "false");
+		model.add(new AffineLayer(784, 1000, true, p));
 		p.set("dout", "true");
-		model.add(new DenseLayer(300, 10, 0, "swish", false, p));
+		model.add(new SigmoidActivation());
+		model.add(new AffineLayer(1000, 100, true, p));
+		model.add(new SigmoidActivation());
+		model.add(new AffineLayer(100, 10, true, p));
+
+		// Fonction de coût entropie croisée avec softmax
 		model.add(new SoftmaxCrossEntropy());
-		/*
-		Parameters p = new Parameters("reg=0", "lr=0.001", "dout=false");
-		model.add(new Unflatten(1, 28, 28));
-		ConvolutionLayer cl = new ConvolutionLayer(28, 28, 1, 16, 5, 1, 0, p);
-		p.set("dout", "true");
-		MaxPooling mp = new MaxPooling(cl.width_out, cl.height_out, 3);
-		model.add(cl);
-		model.add(mp);
-		model.add(new Flatten());
-		model.add(new DenseLayer(mp.width_out * mp.height_out * cl.features_out, 128, 0, "tanh", false, p));
-		model.add(new AffineLayer(128, 10, true, p));
-		model.add(new SoftmaxCrossEntropy());
-*/
+
 		System.out.println("# Model created with following architecture : ");
 		model.print_architecture();
-	
-		System.out.println("# Seed : " + seed);
+
 		System.out.println("# Processors : " + Runtime.getRuntime().availableProcessors());
 
-		double[] trainAccuracy = new double[EPOCHMAX + 1];
-		double[] testAccuracy = new double[EPOCHMAX + 1];
-
+		// Permet d'afficher les nombres avec une précision définie à l'avance
 		DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.getDefault());
 		otherSymbols.setDecimalSeparator('.');
 		otherSymbols.setGroupingSeparator(',');
-		DecimalFormat df = new DecimalFormat("#0.00", otherSymbols);
+		DecimalFormat df2 = new DecimalFormat("#0.00", otherSymbols);
+		DecimalFormat df5 = new DecimalFormat("#0.00000", otherSymbols);
 
-		//visualize_bottleneck("fig0");
-		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
-		model.confusion_matrix(trainData, trainRefs).print_values();
+		// Permet d'enregistrer toutes les données intéréssantes à écrire à la fin
+		MLPMetrics metrics = new MLPMetrics();
 		
+		/*metrics.add_time_series(model.correct_count(train_data, train_refs) / (double) N,
+				model.correct_count(validation_data, validation_refs) / (double) V,
+				model.get_loss(train_data, train_refs));
+		 */
+		
+		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
+
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
-			model.epoch(trainData, trainRefs);
-			// model.writeDiff(testData, "auto"+i, 10);
-			//visualize_bottleneck("fig"+i);
-			double rms = (System.currentTimeMillis() - t) / 1000.;
-			t = System.currentTimeMillis();
-			testAccuracy[i] = (100. * model.correct_count(testData, testRefs)) / T;
-			double test_forward_t = (System.currentTimeMillis() - t) / 1000.;
-			trainAccuracy[i] = (100. * model.last_correct_count) / N;
-			System.out.print(i + ((i >= 10) ? " " : "  "));
-			System.out.print("Top 1 accuracy (train, test) : " + df.format(trainAccuracy[i]) + "% "
-					+ df.format(testAccuracy[i]) + "% ");
-			System.out.print("loss " + model.last_average_loss + "\t");
-			System.out.print("epoch time " + df.format(rms) + "s");
-			System.out.print("test time " + df.format(test_forward_t) + "s");
-			System.out.println(" ETA " + df.format((EPOCHMAX - i) * (rms)) + "s");
-			//model.confusion_matrix(trainData, trainRefs).print_values();
-			
-			System.out.println();
-		}
-		
-		((AffineLayer)model.layers.get(0)).weight.visualize("test", 28, 1, 10, true);
+			// On lance l'époque
+			model.epoch(train_data, train_refs);
 
-		for (double f : trainAccuracy) {
-			System.out.print(df.format(f) + ";");
+			// Temps que cela a pris pour effectuer l'époque
+			double epoch_time = (System.currentTimeMillis() - t) / 1000.;
+
+			t = System.currentTimeMillis();
+			double validation_accuracy = (100. * model.correct_count(validation_data, validation_refs)) / V;
+
+			// Temps que cela a pris de regarder le nombre de données de validation correct
+			double validation_forward_t = (System.currentTimeMillis() - t) / 1000.;
+
+			double train_accuracy = (100. * model.last_correct_count) / N;
+
+			metrics.add_time_series(train_accuracy, validation_accuracy, model.last_average_loss);
+
+			// Exemple d'affichage : 
+			// [==========] - 3  Top 1 accuracy (train, test) : 93.92% 89.23% loss 1.23 epoch time 3.21s test time 1.01s ETA 32.12s
+
+			System.out.print(i + ((i >= 10) ? " " : "  "));
+			System.out.print("Top 1 accuracy (train, val) : " + df2.format(train_accuracy) + "% "
+					+ df2.format(validation_accuracy) + "% ");
+			System.out.print("loss " + df5.format(model.last_average_loss) + " ");
+			System.out.print("epoch time " + df2.format(epoch_time) + "s ");
+			System.out.print("forward time " + df2.format(validation_forward_t) + "s");
+			
+			// Temps avant la fin de l'entraînement
+			System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
 		}
-		System.out.println();
-		for (double f : testAccuracy) {
-			System.out.print(df.format(f) + ";");
-		}
-		System.out.println();
-		// System.out.print("MLPerceptron On the test set : ");
-		// System.out.println((100f * model.correct_count(testData, testRefs)) / T);
+
+		// Ecrit les données intéréssantes, comme la matrice de confusion etc.
+		metrics.measure_and_write("./out_mnist/train", model, train_data, train_refs, true);
+		metrics.measure_and_write("./out_mnist/test", model, test_data, test_refs, true);
+		metrics.write_time_series_csv("./out_mnist/time_series.csv");
+		
+		// Valeur sur les données de test
+		System.out.println("Value at final test  : " + df2.format((100. * model.correct_count(test_data, test_refs)) / T) + "%");
 	}
 }

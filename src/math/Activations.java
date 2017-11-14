@@ -1,5 +1,8 @@
 package math;
 
+/**
+ * Implémentation de références pour diverses activation.
+ */
 public abstract class Activations {
 	public static Vector softmax(Vector activations) {
 		double max = activations.max();
@@ -48,64 +51,28 @@ public abstract class Activations {
 		}
 		return null;
 	}
-	
-	public static Vector sigmoid(Vector x) {
-		for (int i = 0; i < x.length; i++) {
-			x.v[i] = (float) (1 / (1 + Math.exp(-x.v[i])));
-		}
-		return x;
+
+	public static double sigmoid(double x) {
+		return 1 / (1 + Math.exp(-x));
 	}
 
-	public static Matrix sigmoid(Matrix x) {
-		for (int j = 0; j < x.height; j++) {
-			for (int i = 0; i < x.width; i++) {
-				x.v[j][i] = (float) (1 / (1 + Math.exp(-x.v[j][i])));
-			}
-		}
-		return x;
-	}
-	
 	public static double sigmoid_backward(double x) {
-		return x*(1-x);
+		return x * (1 - x);
 	}
 
-	public static Vector ReLU(Vector x) {
-		for (int i = 0; i < x.length; i++) {
-			x.v[i] = Math.max(0, x.v[i]);
-		}
-		return x;
+	public static double ReLU(double x) {
+		return Math.max(0, x);
 	}
 
-	public static Matrix ReLU(Matrix x) {
-		for (int j = 0; j < x.height; j++) {
-			for (int i = 0; i < x.width; i++) {
-				x.v[j][i] = Math.max(x.v[j][i], 0);
-			}
-		}
-		return x;
-	}
-	
 	public static double ReLU_backward(double x) {
 		return x > 0 ? 1 : 0;
 	}
-	
-	public static Vector TanH(Vector x) {
-		for (int i = 0; i < x.length; i++) {
-			x.v[i] = Math.tanh(x.v[i]);
-		}
-		return x;
+
+	public static double TanH(double x) {
+		return Math.tanh(x);
 	}
 
-	public static Matrix TanH(Matrix x) {
-		for (int j = 0; j < x.height; j++) {
-			for (int i = 0; i < x.width; i++) {
-				x.v[j][i] = Math.tanh(x.v[j][i]);
-			}
-		}
-		return x;
-	}
-	
 	public static double TanH_backward(double x) {
-		return 1-x*x;
+		return 1 - x * x;
 	}
 }
