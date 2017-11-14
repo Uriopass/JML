@@ -56,4 +56,11 @@ public class Optimizers {
 	public static void RMSProp(RMSVector v, double gamma, double lr, double eps) {
 		RMSProp(v, v.grad, v.acc, gamma, lr, eps);
 	}
+
+	public static void RMSProp(FeatureMatrix w, FeatureMatrix grad, FeatureMatrix acc,
+			double gamma, double learning_rate, double eps) {
+		for(int i = 0 ; i < w.features ; i++) {
+			Optimizers.RMSProp(w.v[i], grad.v[i], acc.v[i], gamma, learning_rate, eps);
+		}
+	}
 }

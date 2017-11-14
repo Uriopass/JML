@@ -39,11 +39,11 @@ public class ReccurentAffineLayer implements FlatLayer {
 		bias_out = new RMSVector(fan_out);
 		bias_state = new RMSVector(state.height);
 		
-		act = ActivationParser.getActivationByName(state_act);
+		act = ActivationParser.get_activation_by_name(state_act);
 		
 		if(init) {
-			Initialisations.he_uniform(weight_out, fan_in, p.getAsDouble("init_multiplier", 1));
-			Initialisations.he_uniform(weight_state, fan_in+state.height, p.getAsDouble("init_multiplier", 1));
+			Initialisations.he_uniform(weight_out, fan_in, p.get_as_double("init_multiplier", 1));
+			Initialisations.he_uniform(weight_state, fan_in+state.height, p.get_as_double("init_multiplier", 1));
 			
 			//bias.fill(0);
 		}
@@ -52,12 +52,12 @@ public class ReccurentAffineLayer implements FlatLayer {
 			p = new Parameters();
 		}
 		
-		this.regularization = p.getAsDouble("reg", 0);
-		this.learning_rate = p.getAsDouble("lr", 0.001);
-		this.learning_rate_decay = p.getAsDouble("lrdecay", 1);
-		this.gamma = p.getAsDouble("gamma", 0.9);
-		this.epsilon = p.getAsDouble("epsilon", 1e-8);
-		this.calculate_dout = p.getAsString("dout", "true").equalsIgnoreCase("true");
+		this.regularization = p.get_as_double("reg", 0);
+		this.learning_rate = p.get_as_double("lr", 0.001);
+		this.learning_rate_decay = p.get_as_double("lrdecay", 1);
+		this.gamma = p.get_as_double("gamma", 0.9);
+		this.epsilon = p.get_as_double("epsilon", 1e-8);
+		this.calculate_dout = p.get_or_default("dout", "true").equalsIgnoreCase("true");
 	}
 	
 	public void end_of_epoch() {

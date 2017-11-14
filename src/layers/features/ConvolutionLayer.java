@@ -51,10 +51,10 @@ public class ConvolutionLayer implements FeatureLayer {
 				Initialisations.he_uniform(weights[f].v[i], conv_size * conv_size, 1);
 			}
 		}
-		learning_rate = p.getAsDouble("lr", 0.01);
-		gamma = p.getAsDouble("gamma", 0.9);
-		eps = p.getAsDouble("eps", 1e-8);
-		calculate_dout = p.getAsString("dout", "true").equalsIgnoreCase("true");
+		learning_rate = p.get_as_double("lr", 0.01);
+		gamma = p.get_as_double("gamma", 0.9);
+		eps = p.get_as_double("eps", 1e-8);
+		calculate_dout = p.get_or_default("dout", "true").equalsIgnoreCase("true");
 	}
 
 	@Override

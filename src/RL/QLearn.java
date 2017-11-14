@@ -68,7 +68,7 @@ public class QLearn {
 		for(int i = 0 ; i < mini_batch ; i++) {
 			result.v[experiences.get(sample[i]).a][i] = refs.v[i];
 		}
-		Loss ql = net.getLoss();
+		Loss ql = net.get_loss_layer();
 		ql.feed_ref(result);
 		net.backward_train(dout);
 		loss += ql.loss;
@@ -127,4 +127,6 @@ public class QLearn {
 			//env.print_state();
 		}
 	}
+	
+	
 }

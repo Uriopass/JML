@@ -9,8 +9,7 @@ import java.util.Locale;
 import datareaders.MnistReader;
 import image.ImageConverter;
 import layers.Parameters;
-import layers.activations.SigmoidActivation;
-import layers.flat.AffineLayer;
+import layers.flat.DenseLayer;
 import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
@@ -21,11 +20,11 @@ public class MainMnistForward {
 
 	// Chemin vers les données
 	static String path = "";
-	static String train_labelDB = path + "train-labels-idx1-ubyte";
-	static String train_imageDB = path + "train-images-idx3-ubyte";
+	static String train_labelDB = path + "train-labels.idx1-ubyte";
+	static String train_imageDB = path + "train-images.idx3-ubyte";
 
-	static String test_labelDB = path + "test-labels-idx1-ubyte";
-	static String test_imageDB = path + "test-images-idx3-ubyte";
+	static String test_labelDB = path + "t10k-labels.idx1-ubyte";
+	static String test_imageDB = path + "t10k-images.idx3-ubyte";
 	
 	public static MultiLayerPerceptron model;
 
@@ -33,7 +32,7 @@ public class MainMnistForward {
 	public final static int EPOCHMAX = 20;
 
 	// Nombre de données d'entrainements
-	public static final int N = 50000;
+	public static final int N = 20000;
 	// Nombre de données de validation
 	public static final int V = 10000;
 
@@ -126,19 +125,16 @@ public class MainMnistForward {
 		model = new MultiLayerPerceptron(40);
 		load_data();
 		// Paramètres du modele
-		Parameters p = new Parameters("reg=0.00005", "lr=0.005");
+		Parameters p = new Parameters("reg=0.00005", "lr=0.01");
 
 		// Modèle classique à 4 couches (entrée + cachée + cachée + sortie) avec 1000 et 100 neurones intermédiaires et des activations en sigmoide
 		
 		// Dout est inutile pour la première couche
 		p.set("dout", "false");
-		model.add(new AffineLayer(784, 1000, true, p));
+		model.add(new DenseLayer(784, 500, 0, "tanh", true, p));
 		p.set("dout", "true");
-		model.add(new SigmoidActivation());
-		model.add(new AffineLayer(1000, 100, true, p));
-		model.add(new SigmoidActivation());
-		model.add(new AffineLayer(100, 10, true, p));
-
+		model.add(new DenseLayer(500, 100, 0, "tanh", true, p));
+		model.add(new DenseLayer(100, 10, 0, "none", false, p));
 		// Fonction de coût entropie croisée avec softmax
 		model.add(new SoftmaxCrossEntropy());
 

@@ -55,9 +55,10 @@ public class ConvolutionalNetwork extends FeedForwardNetwork {
 	}
 
 	@Override
-	public Loss getLoss() {
+	public Loss get_loss_layer() {
 		return (Loss)layers.get(layers.size()-1);
 	}
+	
 	@Override
 	public void print_architecture() {
 		for(Layer l : layers) {

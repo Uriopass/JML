@@ -11,7 +11,6 @@ import layers.features.Unflatten;
 import layers.flat.AffineLayer;
 import layers.flat.BatchnormLayer;
 import layers.losses.Loss;
-import layers.losses.SoftmaxCrossEntropy;
 import math.FeatureMatrix;
 import math.Matrix;
 import math.Vector;
@@ -73,7 +72,7 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 					last_correct_count += Math.abs(d) < 1e-8 ? 1 : 0;
 				}
 				
-				getLoss().feed_ref(Loss.from_int_refs(new int[] {ref}, next_m.height));
+				get_loss_layer().feed_ref(Loss.from_int_refs(new int[] {ref}, next_m.height));
 				for(int l_ind = layers.size()-1 ; l_ind >= 0 ; l_ind--) {
 					Layer l = layers.get(l_ind);
 					if(l instanceof FlatLayer) {
@@ -93,7 +92,7 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 					} 
 				}
 				//System.out.println(System.currentTimeMillis()-time);
-				last_average_loss += getLoss().loss;
+				last_average_loss += get_loss_layer().loss;
 			}
 			last_average_loss /= mini_batch;
 			//System.out.println(last_correct_count);
