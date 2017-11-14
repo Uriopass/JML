@@ -6,13 +6,11 @@ import java.util.Locale;
 
 import datareaders.Cal101Reader;
 import layers.Parameters;
-import layers.activations.SigmoidActivation;
-import layers.flat.AffineLayer;
+import layers.flat.DenseLayer;
 import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
-import perceptron.MLPMetrics;
 import perceptron.MultiLayerPerceptron;
 
 public class MainCal101Forward {
@@ -24,13 +22,13 @@ public class MainCal101Forward {
 	public final static int EPOCHMAX = 30;
 
 	// Nombre de données d'entrainements
-	public static final int N = 3100;
+	public static final int N = 4100;
 
 	// Nombre de données de validation
-	public static final int V = 1000;
+	public static final int V = 0;
 
 	// Nombre de données de test
-	public static int T = 2000;
+	public static int T = 2307;
 
 	// Matrices de données
 	public static Matrix train_data, test_data, validation_data;
@@ -84,7 +82,7 @@ public class MainCal101Forward {
 	}
 
 	public static void main(String[] args) {
-		seed = 1510445586196L;
+		// seed = 1510445586196L;
 		// On initialise le générateur aléatoire
 		long time = System.currentTimeMillis();
 		RandomGenerator.init(seed);
@@ -94,15 +92,13 @@ public class MainCal101Forward {
 		model = new MultiLayerPerceptron(100);
 		load_data();
 		
-		Parameters p = new Parameters("reg=0.0001", "lr=0.01");
+		Parameters p = new Parameters("reg=0.000001", "lr=0.001", "lrdecay=0.99");
 		
 		// Modèle classique à 4 couches (entrée + cachée + cachée + sortie) avec 1000/300 neurones intermédiaires et des activations en sigmoide
-		model.add(new AffineLayer(784, 1300, true, p));
-		model.add(new SigmoidActivation());
-		model.add(new AffineLayer(1300, 500, true, p));
-		model.add(new SigmoidActivation());
-		model.add(new AffineLayer(500, 101, true, p));
-		
+		p.set("dout", "false");
+		model.add(new DenseLayer(784, 10000, 0.3, "swish", true, p));
+		p.set("dout", "true");
+		model.add(new DenseLayer(10000, 102, 0, "none", false, p));
 		// Fonction de coût entropie croisée avec softmax
 		model.add(new SoftmaxCrossEntropy());
 		
@@ -119,11 +115,11 @@ public class MainCal101Forward {
 		DecimalFormat df5 = new DecimalFormat("#0.00000", otherSymbols);
 		
 		// Permet d'enregistrer toutes les données intéréssantes à écrire à la fin
-		MLPMetrics metrics = new MLPMetrics();
+		/*MLPMetrics metrics = new MLPMetrics();
 		metrics.add_time_series(model.correct_count(train_data, train_refs)/(double)N, 
 								model.correct_count(validation_data, validation_refs)/(double)V, 
 								model.get_loss(train_data, train_refs));
-
+*/
 		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
 
 		for (int i = 1; i <= EPOCHMAX; i++) {
@@ -135,30 +131,32 @@ public class MainCal101Forward {
 			double epoch_time = (System.currentTimeMillis() - t) / 1000.;
 			
 			t = System.currentTimeMillis();
-			double validation_accuracy = (100. * model.correct_count(validation_data, validation_refs)) / V;
+			double validation_accuracy = (100. * model.correct_count(test_data, test_refs)) / T;
 			
 			// Temps que cela a pris de regarder le nombre de données de test correct
 			double validation_forward_t = (System.currentTimeMillis() - t) / 1000.;
 			
 			double train_accuracy = (100. * model.last_correct_count) / N;
 
-			metrics.add_time_series(train_accuracy, validation_accuracy, model.last_average_loss);
+			//metrics.add_time_series(train_accuracy, validation_accuracy, model.last_average_loss);
 			
 			// Exemple d'affichage : 
 			// [==========] - 3  Top 1 accuracy (train, test) : 53.92% 43.23% loss 1.23 epoch time 8.21s test time 1.01s ETA 32.12s
 			
 			System.out.print(i + ((i >= 10) ? " " : "  "));
-			System.out.print("Top 1 accuracy (validation, test) : " + df2.format(train_accuracy) + "% "
+			System.out.print("Top 1 accuracy (train, test) : " + df2.format(train_accuracy) + "% "
 					+ df2.format(validation_accuracy) + "% ");
 			System.out.print("loss " + df5.format(model.last_average_loss) + " ");
 			System.out.print("epoch time " + df2.format(epoch_time) + "s ");
 			System.out.print("validation time " + df2.format(validation_forward_t) + "s");
 			System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
 		}
-
+/*
 		metrics.measure_and_write("./out_cal101/train", model, train_data, train_refs, false);
 		metrics.measure_and_write("./out_cal101/test", model, test_data, test_refs, false);
 		metrics.write_time_series_csv("./out_cal101/accuracy.csv");
+
+*/
 		System.out.println("Value at final test  : "+df2.format((100. * model.correct_count(test_data, test_refs)) / T)+"%");
 	}
 }

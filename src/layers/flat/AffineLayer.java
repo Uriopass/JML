@@ -97,8 +97,9 @@ public class AffineLayer implements FlatLayer {
 		// b' = moyennes des valeurs de dout sur l'axe du mini batch
 		// x' = (w.T)*dout
 
-		weight.grad
-				.add(dout.parralel_mult(cache.T()).scale(1.0 / cache.width).add(Matrix.scale(weight, regularization)));
+		weight.grad.add(dout.parralel_mult(cache.T()).scale(1.0 / cache.width));
+		if(regularization != 0)
+			weight.grad.add(Matrix.scale(weight, regularization));
 		bias.grad.add(dout.sum(Matrix.AXIS_WIDTH).scale(1.0 / cache.width));
 
 		if (!calculate_dout)
@@ -109,6 +110,12 @@ public class AffineLayer implements FlatLayer {
 
 	@Override
 	public void apply_gradient() {
+		/*
+		weight.add(weight.grad.scale(-learning_rate));
+		weight.grad.fill(0);
+		bias.add(bias.grad.scale(-learning_rate));
+		bias.grad.fill(0);
+		*/
 		// On utilise RMSProp pour l'optimisation, car la convergence est de meileure qualitée qu'une simple descente de gradient
 		Optimizers.RMSProp(weight, gamma, learning_rate, epsilon);
 		Optimizers.RMSProp(bias, gamma, learning_rate, epsilon);
