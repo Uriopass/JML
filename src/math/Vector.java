@@ -49,6 +49,12 @@ public class Vector {
 		for (int i = 0; i < length; i++)
 			this.v[i] = v.v[i];
 	}
+	
+	public static Vector one_hot(int length, int position) {
+		Vector v = new Vector(length);
+		v.v[position] = 1;
+		return v;
+	}
 
 	/**
 	 * Ajoute un scalaire à ce vecteur
@@ -125,6 +131,15 @@ public class Vector {
 		return max;
 	}
 
+	public int count_zeros() {
+		int zeros = 0;
+		for(int i = 0 ; i < length ; i++) {
+			if(v[i] == 0)
+				zeros += 1;
+		}
+		return zeros;
+	}
+	
 	/**
 	 * Effectue le produit scalaire de ce vecteur par un autre vecteur
 	 * @param b

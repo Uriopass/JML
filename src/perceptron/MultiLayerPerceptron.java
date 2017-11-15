@@ -72,7 +72,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	 * @param data données à apprendre
 	 * @param refs labels représentant la vérité
 	 */
-	public void epoch(Matrix data, int[] refs) {
+	public void epoch(Matrix data, Matrix refs) {
 		
 		if(data.width % mini_batch != 0) {
 			System.err.println("Le nombre de données ne sont pas divisble par mini_batch, "+(data.width%mini_batch)+" données seront ignorées.");
@@ -99,7 +99,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			// Mini batch à utiliser
 			Matrix batch = new Matrix(mini_batch, data.height);
 			// Labels du mini batch
-			int[] refs_v = new int[mini_batch];
+			Matrix refs_v = new Matrix(mini_batch, refs.height);
 			// Barre de progression
 			if (tenth != 0) {
 				if (i % tenth == 0)
@@ -110,25 +110,19 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			for (int j = 0; j < mini_batch; j++) {
 				int indice = ints.get(i * mini_batch + j);
 				batch.set_column(j, columns.get(indice));
-				refs_v[j] = refs[indice];
+				refs_v.set_column(j, refs.get_column(indice));
 			}
 
 			// Propagation avant
 			batch = forward_train(batch);
-
-			for(int j = 0 ; j < mini_batch ; j++) {				
-				int predicted = batch.get_column(j).argmax();
-				int correct = refs_v[j];
-				if(predicted == correct) {
-					last_correct_count += 1;
-				}
-			}
-
+			Vector predicted = batch.argmax(Matrix.AXIS_HEIGHT);
+			Vector right = refs_v.argmax(Matrix.AXIS_HEIGHT);
+			last_correct_count += predicted.add(right.scale(-1)).count_zeros();
 			
 			Matrix dout = batch;
 			Loss l = get_loss_layer();
 			// On donne les références à la fonction de coût (en transformant les labels en matrice de vérité sous la forme d'une liste de one-hot vector)
-			l.feed_ref(Loss.from_int_refs(refs_v, dout.height));
+			l.feed_ref(refs_v);
 
 			// Propagation arrière
 			backward_train(dout);
@@ -225,17 +219,11 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	/**
 	 * Compte le nombre de données classifiées correctement
 	 */
-	public int correct_count(Matrix data, int[] refs) {
+	public int correct_count(Matrix data, Matrix refs) {
 		int ok = 0;
 		Matrix end = forward(data);
-		for (int i = 0; i < refs.length; i++) {
-			int correct = refs[i];
-			int predicted = end.get_column(i).argmax();
-			if(correct == predicted) {
-				ok += 1;
-			}
-		}
-		return ok;
+		Vector predicted = end.argmax(Matrix.AXIS_HEIGHT);
+		return predicted.add(refs.argmax(Matrix.AXIS_HEIGHT).scale(-1)).count_zeros();
 	}
 
 	@Override

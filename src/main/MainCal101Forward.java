@@ -19,7 +19,7 @@ public class MainCal101Forward {
 	public static MultiLayerPerceptron model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 30;
+	public final static int EPOCHMAX = 50;
 
 	// Nombre de données d'entrainements
 	public static final int N = 4100;
@@ -29,11 +29,13 @@ public class MainCal101Forward {
 
 	// Nombre de données de test
 	public static int T = 2307;
+	
+	public static int out_size = 101;
 
 	// Matrices de données
 	public static Matrix train_data, test_data, validation_data;
 	// Tableaus de labels
-	public static int[] train_refs, test_refs, validation_refs;
+	public static Matrix train_refs, test_refs, validation_refs;
 
 	// Seed à utiliser pour la reproducibilité
 	public static long seed = System.currentTimeMillis();
@@ -46,34 +48,45 @@ public class MainCal101Forward {
 		System.out.println("# Database loaded !");
 		// On charge les données d'entrainements et de validation
 		System.out.println("# Build train & validation");
-		train_data = new Matrix(N, 784);
-		train_refs = new int[N];
-		validation_data = new Matrix(N, 784);
-		validation_refs = new int[N];
+		train_data = new Matrix(N*3, 784);
+		train_refs = new Matrix(N*3, out_size);
+		validation_data = new Matrix(V, 784);
+		validation_refs = new Matrix(train_refs.width, train_refs.height);
 		int i = 0;
 		for (double[] v : Cal101Reader.get_train_data().transpose().v) {
 			if(i < N) {
 				train_data.set_column(i, new Vector(v));
-				train_refs[i] = Cal101Reader.get_train_refs()[i];
+				train_refs.set_column(i, Vector.one_hot(out_size, Cal101Reader.get_train_refs()[i]));
 			} else if(i < N+V) {
 				validation_data.set_column(i-N, new Vector(v));
-				validation_refs[i-N] = Cal101Reader.get_train_refs()[i];
+				validation_refs.set_column(i, Vector.one_hot(out_size, Cal101Reader.get_train_refs()[i]));
 			} else {
 				break;
 			}
 			i++;
 		}
+		for(int k = 0 ; k < train_data.width-N ; k++) {
+			double mix = 0.9;
+			int a = RandomGenerator.uniform_int(N), b = RandomGenerator.uniform_int(N);
+			Vector a_v = train_data.get_column(a);
+			Vector b_v = train_data.get_column(b);
+			Vector a_r = train_refs.get_column(a);
+			Vector b_r = train_refs.get_column(b);
+			
+			train_data.set_column(k+N, a_v.scale(mix).add(b_v.scale(1-mix)));
+			train_refs.set_column(k+N, a_r.scale(mix).add(b_r.scale(1-mix)));
+		}
 
-		System.out.println("# Train/Validation set built with " + N + "/" + V + " images");
+		System.out.println("# Train/Validation set built with " + train_data.width + "/" + validation_data.width + " images");
 		
 		// On charge les données de test
 		System.out.println("# Build test");
 		test_data = new Matrix(T, 784);
-		test_refs = new int[T];
+		test_refs = new Matrix(T, out_size);
 		i = 0;
 		for (double[] v : Cal101Reader.get_test_data().transpose().v) {
 			test_data.set_column(i, new Vector(v));
-			test_refs[i] = Cal101Reader.get_test_refs()[i];
+			test_refs.set_column(i, Vector.one_hot(out_size, Cal101Reader.get_test_refs()[i]));
 			i++;
 			if (i >= T)
 				break;
@@ -96,9 +109,10 @@ public class MainCal101Forward {
 		
 		// Modèle classique à 4 couches (entrée + cachée + cachée + sortie) avec 1000/300 neurones intermédiaires et des activations en sigmoide
 		p.set("dout", "false");
-		model.add(new DenseLayer(784, 10000, 0.3, "swish", true, p));
+		model.add(new DenseLayer(784, 1000, 0.3, "tanh", true, p));
 		p.set("dout", "true");
-		model.add(new DenseLayer(10000, 102, 0, "none", false, p));
+		model.add(new DenseLayer(1000, 1000, 0.3, "tanh", true, p));
+		model.add(new DenseLayer(1000, 102, 0, "none", false, p));
 		// Fonction de coût entropie croisée avec softmax
 		model.add(new SoftmaxCrossEntropy());
 		
@@ -136,7 +150,7 @@ public class MainCal101Forward {
 			// Temps que cela a pris de regarder le nombre de données de test correct
 			double validation_forward_t = (System.currentTimeMillis() - t) / 1000.;
 			
-			double train_accuracy = (100. * model.last_correct_count) / N;
+			double train_accuracy = (100. * model.last_correct_count) / train_data.width;
 
 			//metrics.add_time_series(train_accuracy, validation_accuracy, model.last_average_loss);
 			
