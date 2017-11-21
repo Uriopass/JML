@@ -6,13 +6,13 @@ import layers.activations.ActivationLayer;
 import layers.activations.ActivationParser;
 import math.Initialisations;
 import math.Matrix;
-import math.Optimizers;
-import math.RMSMatrix;
-import math.RMSVector;
-
+import math.TrainableMatrix;
+import math.TrainableVector;
+// Deprecated, UPDATE WITH TRAINABLE MATRICES
+@Deprecated
 public class ReccurentAffineLayer implements FlatLayer {
-	public RMSMatrix weight_out, weight_state;
-	public RMSVector bias_out, bias_state;
+	public TrainableMatrix weight_out, weight_state;
+	public TrainableVector bias_out, bias_state;
 	
 	public Matrix state;
 	
@@ -34,10 +34,10 @@ public class ReccurentAffineLayer implements FlatLayer {
 		this.fan_in = fan_in;
 		this.fan_out = fan_out;
 		state = new Matrix(1, state_size);
-		weight_state = new RMSMatrix(fan_in+state.height, state.height);
-		weight_out = new RMSMatrix(state.height, fan_out);
-		bias_out = new RMSVector(fan_out);
-		bias_state = new RMSVector(state.height);
+		weight_state = new TrainableMatrix(fan_in+state.height, state.height);
+		weight_out = new TrainableMatrix(state.height, fan_out);
+		bias_out = new TrainableVector(fan_out);
+		bias_state = new TrainableVector(state.height);
 		
 		act = ActivationParser.get_activation_by_name(state_act);
 		
@@ -82,13 +82,13 @@ public class ReccurentAffineLayer implements FlatLayer {
 	}
 	
 	@Override
-	public Matrix backward(Matrix dout) {
+	public Matrix backward(Matrix dout, boolean train) {
 		weight_out.grad.add(dout.parralel_mult(cache_state.T()).scale(1.0 / cache_state.width)
 				.add(Matrix.scale(weight_out, regularization)));
 		bias_out.grad.add(dout.sum(Matrix.AXIS_WIDTH).scale(1.0 / cache_state.width));
 		
 		dout = weight_out.T().parralel_mult(dout);
-		dout = act.backward(dout);
+		dout = act.backward(dout, train);
 		
 		weight_state.grad.add(dout.parralel_mult(cache_concat.T()).scale(1.0 / cache_concat.width)
 				.add(Matrix.scale(weight_state, regularization)));
@@ -102,14 +102,6 @@ public class ReccurentAffineLayer implements FlatLayer {
 			in_grad.v[i] = in_c_grad.v[i];
 		}
 		return in_grad;
-	}
-	
-	@Override
-	public void apply_gradient() {
-		Optimizers.RMSProp(weight_out, gamma, learning_rate, epsilon);
-		Optimizers.RMSProp(bias_out, gamma, learning_rate, epsilon);
-		Optimizers.RMSProp(weight_state, gamma, learning_rate, epsilon);
-		Optimizers.RMSProp(bias_state, gamma, learning_rate, epsilon);
 	}
 	
 	@Override

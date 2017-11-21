@@ -24,8 +24,4 @@ public abstract class Loss implements FlatLayer {
 		}
 		return m;
 	}
-
-	@Override
-	public void apply_gradient() {
-	}
 }

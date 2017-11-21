@@ -30,11 +30,7 @@ public class GaussianNoise implements FlatLayer {
 	}
 
 	@Override
-	public Matrix backward(Matrix dout) {
+	public Matrix backward(Matrix dout, boolean train) {
 		return dout;
 	}
-
-	@Override
-	public void apply_gradient() {
-	};
 }

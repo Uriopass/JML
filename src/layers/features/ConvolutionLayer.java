@@ -5,7 +5,6 @@ import layers.Parameters;
 import math.FeatureMatrix;
 import math.Initialisations;
 import math.Matrix;
-import math.Optimizers;
 import math.Vector;
 
 public class ConvolutionLayer implements FeatureLayer {
@@ -169,14 +168,12 @@ public class ConvolutionLayer implements FeatureLayer {
 	}
 
 	@Override
-	public void apply_gradient() {
-		for (int i = 0; i < weights.length; i++) {
-			Optimizers.RMSProp(weights[i], w_grad[i], acc[i], gamma, learning_rate, eps);
-		}
+	public String toString() {
+		return "ConvolutionLayer(("+conv_size+", "+conv_size+"), "+features_out+", "+stride+", "+pad+")";
 	}
 
 	@Override
-	public String toString() {
-		return "ConvolutionLayer(("+conv_size+", "+conv_size+"), "+features_out+", "+stride+", "+pad+")";
+	public void apply_gradient() {
+		
 	}
 }

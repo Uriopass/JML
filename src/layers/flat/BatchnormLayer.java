@@ -1,22 +1,25 @@
 package layers.flat;
 
+import java.util.Collection;
+import java.util.HashMap;
+
 import layers.FlatLayer;
 import layers.Parameters;
+import layers.TrainableVectors;
 import math.Matrix;
-import math.Optimizers;
-import math.RMSVector;
+import math.TrainableVector;
 import math.Vector;
 
 /**
- * Implementation de la normalisation par batch, permettant d'aider à la convergence sur des réseaux profonds en forcant mean = alpha et var = beta. 
- * Par défaut alpha = 0 et beta = 1 mais ce sont des paramètres appris par le réseau.
- * Le code n'est pas commenté car cette couche est hors-programme.
+ * Implementation de la normalisation par batch, permettant d'aider à la
+ * convergence sur des réseaux profonds en forcant mean = alpha et var = beta.
+ * Par défaut alpha = 0 et beta = 1 mais ce sont des paramètres appris par le
+ * réseau. Le code n'est pas commenté car cette couche est hors-programme.
  */
-public class BatchnormLayer implements FlatLayer {
+public class BatchnormLayer implements FlatLayer, TrainableVectors {
 
 	final static double epsilon = 1e-4;
 	final static double rms_gamma = 0.9;
-	RMSVector gamma, beta;
 
 	Vector running_mean, running_var;
 
@@ -25,25 +28,22 @@ public class BatchnormLayer implements FlatLayer {
 	private Vector var, sqrtvar, invvar, mu;
 	private Matrix va2;
 
-	public double learning_rate;
-	public double learning_rate_decay;
+	public HashMap<String, TrainableVector> vectors = new HashMap<>();
 	public double momentum;
 
 	public int fan_in;
 
 	public BatchnormLayer(int fan_in, Parameters param) {
 		this.fan_in = fan_in;
-		gamma = new RMSVector(fan_in);
-		beta = new RMSVector(fan_in);
+		vectors.put("gamma", new TrainableVector(fan_in));
+		vectors.put("beta", new TrainableVector(fan_in));
 		running_mean = new Vector(fan_in);
 		running_var = new Vector(fan_in);
 
-		for (int i = 0; i < gamma.length; i++) {
-			gamma.v[i] = 1;
+		for (int i = 0; i < vectors.get("gamma").length; i++) {
+			vectors.get("gamma").v[i] = 1;
 			running_var.v[i] = 1;
 		}
-		learning_rate = param.get_as_double("lr", 0.001);
-		learning_rate_decay = param.get_as_double("lrdecay", 1);
 		momentum = param.get_as_double("momentum", 0.9);
 	}
 
@@ -72,29 +72,31 @@ public class BatchnormLayer implements FlatLayer {
 			in.scale(invvar, Matrix.AXIS_WIDTH);
 			va2 = new Matrix(in);
 			// Step 8
-			in.scale(gamma, Matrix.AXIS_WIDTH);
+			in.scale(vectors.get("gamma"), Matrix.AXIS_WIDTH);
 			// Step 9
-			in.add(beta, Matrix.AXIS_WIDTH);
+			in.add(vectors.get("beta"), Matrix.AXIS_WIDTH);
 			running_mean = running_mean.scale(momentum).add(new Vector(mu).scale(1 - momentum));
 			running_var = running_var.scale(momentum).add(new Vector(var).scale(1 - momentum));
 		} else {
 			in.add(running_mean, Matrix.AXIS_WIDTH);
 			in.scale(new Vector(running_var).power(0.5).add(epsilon).inverse(), Matrix.AXIS_WIDTH);
-			in.scale(gamma, Matrix.AXIS_WIDTH);
-			in.add(beta, Matrix.AXIS_WIDTH);
+			in.scale(vectors.get("gamma"), Matrix.AXIS_WIDTH);
+			in.add(vectors.get("beta"), Matrix.AXIS_WIDTH);
 		}
 		return in;
 	}
 
 	@Override
-	public Matrix backward(Matrix dout) {
+	public Matrix backward(Matrix dout, boolean train) {
 		int N = dout.width;
 		// Step 9
 		Matrix dva3 = dout;
-		beta.grad.add(dout.sum(Matrix.AXIS_WIDTH).scale(1.0 / N));
-		// Step 8
-		gamma.grad.add(va2.hadamart(dva3).sum(Matrix.AXIS_WIDTH).scale(1.0 / N));
-		Matrix dva2 = dva3.scale(gamma, Matrix.AXIS_WIDTH);
+		if (train) {
+			vectors.get("beta").grad.add(dout.sum(Matrix.AXIS_WIDTH).scale(1.0 / N));
+			// Step 8
+			vectors.get("gamma").grad.add(va2.hadamart(dva3).sum(Matrix.AXIS_WIDTH).scale(1.0 / N));
+		}
+		Matrix dva2 = dva3.scale(vectors.get("gamma"), Matrix.AXIS_WIDTH);
 		// Step 7
 		Vector dinvvar = new Matrix(xmu).hadamart(dva2).sum(Matrix.AXIS_WIDTH);
 		Matrix dxmu = dva2.scale(invvar, Matrix.AXIS_WIDTH);
@@ -113,20 +115,15 @@ public class BatchnormLayer implements FlatLayer {
 		dxmu.add(dmu, Matrix.AXIS_WIDTH);
 		return dxmu;
 	}
-
-	public void end_of_epoch() {
-		learning_rate *= learning_rate_decay;
-	}
-
-	@Override
-	public void apply_gradient() {
-		Optimizers.RMSProp(gamma, rms_gamma, learning_rate, epsilon);
-		Optimizers.RMSProp(beta, rms_gamma, learning_rate, epsilon);
-	}
-
+	
 	@Override
 	public String toString() {
 		return "BatchnormLayer(" + fan_in + ")";
+	}
+
+	@Override
+	public Collection<TrainableVector> get_trainable_vectors() {
+		return vectors.values();
 	}
 
 }

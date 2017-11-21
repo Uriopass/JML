@@ -33,17 +33,12 @@ public class DropoutLayer implements FlatLayer {
 	}
 
 	@Override
-	public Matrix backward(Matrix dout) {
+	public Matrix backward(Matrix dout, boolean train) {
 		return dout.hadamart(cache);
-	}
-
-	@Override
-	public void apply_gradient() {
 	}
 
 	@Override
 	public String toString() {
 		return "DropoutLayer(" + (1 - keep_prob) + ")";
 	}
-
 }

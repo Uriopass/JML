@@ -28,7 +28,7 @@ public class BanditTest {
 	// Renvoie la récompense lorsqu'on tire le bras b
 	public int TireBras(int b) {
 		nbTireBras[b] += 1;
-		if(choix.nextDouble() < paramB[b])
+		if (choix.nextDouble() < paramB[b])
 			return 1;
 		return 0;
 	}
@@ -38,15 +38,15 @@ public class BanditTest {
 		// Init VA
 		choix = new Random(seed);
 		// Init Q
-		for(int i = 0 ; i < Q.length ; i++) {
+		for (int i = 0; i < Q.length; i++) {
 			Q[i] = 0;
 		}
 		// Init paramB
-		for(int i = 0 ; i < paramB.length ; i++) {
+		for (int i = 0; i < paramB.length; i++) {
 			paramB[i] = choix.nextDouble();
 		}
 		// Init nbTireBras
-		for(int i = 0 ; i < nbTireBras.length ; i++) {
+		for (int i = 0; i < nbTireBras.length; i++) {
 			nbTireBras[i] = 0;
 		}
 	}
@@ -62,7 +62,7 @@ public class BanditTest {
 	public double ChoixBras_EpsG(double epsilon) {
 		// TODO
 		int bras;
-		if(choix.nextDouble() < epsilon) {
+		if (choix.nextDouble() < epsilon) {
 			bras = choix.nextInt(n);
 		} else {
 			bras = argmax(Q);
@@ -70,7 +70,7 @@ public class BanditTest {
 		double reward = TireBras(bras);
 
 		MAJ_Q(bras, reward, 1);
-		
+
 		return reward;
 	}
 
@@ -78,7 +78,7 @@ public class BanditTest {
 	 * Mise à jour de la fonction Q - alpha : parametre d'apprentissage
 	 */
 	public void MAJ_Q(int bras, double rew, double alpha) {
-		Q[bras] = (Q[bras]*(nbTireBras[bras]-1) + rew)/nbTireBras[bras];
+		Q[bras] = (Q[bras] * (nbTireBras[bras] - 1) + rew) / nbTireBras[bras];
 	}
 
 	/*
@@ -92,8 +92,8 @@ public class BanditTest {
 			gain[i] = 0;
 
 		gain[0] = ChoixBras_EpsG(eps);
-		for(int i = 1 ; i < T ; i++) {
-			gain[i] = gain[i-1] + ChoixBras_EpsG(eps);
+		for (int i = 1; i < T; i++) {
+			gain[i] = gain[i - 1] + ChoixBras_EpsG(eps);
 		}
 
 		return gain;
@@ -102,13 +102,13 @@ public class BanditTest {
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException {
 
 		BanditTest bt;
-		
+
 		int Horizon = 1000;
 		int n_bras = 10;
 		Vector av_gain = new Vector(Horizon);
 
 		bt = new BanditTest(Horizon, n_bras);
-		
+
 		// Calcul le gain total moyen en fonction du temps
 		for (int xp = 0; xp < 1000; xp++) {
 			// TODO : on initialise les bras et appelle Experiment

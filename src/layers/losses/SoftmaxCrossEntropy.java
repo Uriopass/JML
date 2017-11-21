@@ -12,7 +12,7 @@ public class SoftmaxCrossEntropy extends Loss {
 	}
 
 	@Override
-	public Matrix backward(Matrix dout) {
+	public Matrix backward(Matrix dout, boolean train) {
 		loss = 0;
 		for (int ref = 0; ref < refs.width; ref++) {
 			int correct_ref = refs.get_column(ref).argmax();

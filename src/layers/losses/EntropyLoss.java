@@ -15,7 +15,7 @@ public class EntropyLoss extends Loss {
 	}
 
 	@Override
-	public Matrix backward(Matrix dout) {
+	public Matrix backward(Matrix dout, boolean train) {
 		loss = 0;
 		for (int i = 0; i < dout.height; i++) {
 			for (int j = 0; j < dout.width; j++) {

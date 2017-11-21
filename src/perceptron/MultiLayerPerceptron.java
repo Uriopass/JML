@@ -5,12 +5,17 @@ import java.util.Collections;
 
 import layers.FlatLayer;
 import layers.Layer;
+import layers.TrainableMatrices;
+import layers.TrainableVectors;
 import layers.flat.AffineLayer;
 import layers.flat.BatchnormLayer;
+import layers.flat.DenseLayer;
 import layers.losses.Loss;
 import math.Matrix;
 import math.RandomGenerator;
+import math.TrainableMatrix;
 import math.Vector;
+import optimizers.Optimizer;
 
 /**
  * Classe principale de perceptron multi couches
@@ -20,17 +25,30 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	// Couches
 	public ArrayList<FlatLayer> layers;
 	public int last_correct_count = 0;
+	
+	Optimizer opt;
 
 	public void add(FlatLayer l) {
 		layers.add(l);
+		if(l instanceof TrainableMatrices) {
+			opt.init_mat((TrainableMatrices)l);
+		}
+		if(l instanceof TrainableVectors) {
+			opt.init_vec((TrainableVectors)l);
+		}
+		if(l instanceof DenseLayer) {
+			opt.init_mat(((DenseLayer) l).al);
+			opt.init_vec(((DenseLayer) l).al);
+		}
 	}
 
 	/**
 	 * @param batch_size Taille du batch à utiliser
 	 */
-	public MultiLayerPerceptron(int batch_size) {
+	public MultiLayerPerceptron(int batch_size, Optimizer opt) {
 		layers = new ArrayList<FlatLayer>();
 		this.mini_batch = batch_size;
+		this.opt = opt;
 	}
 
 	/**
@@ -62,7 +80,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	 */
 	public void backward_train(Matrix dout) {
 		for (int j = layers.size() - 1; j >= 0; j--) {
-			dout = layers.get(j).backward(dout);
+			dout = layers.get(j).backward(dout, true);
 			layers.get(j).apply_gradient();
 		}
 	}

@@ -76,7 +76,7 @@ public abstract class ActivationLayer implements FlatLayer {
 	}
 
 	@Override
-	public Matrix backward(Matrix dout) {
+	public Matrix backward(Matrix dout, boolean train) {
 		for (int i = 0; i < dout.height; i++) {
 			this.i = i;
 			for (int j = 0; j < dout.width; j++) {
@@ -94,8 +94,4 @@ public abstract class ActivationLayer implements FlatLayer {
 		}
 		return dout;
 	}
-
-	@Override
-	public void apply_gradient() {
-	};
 }

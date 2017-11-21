@@ -17,10 +17,5 @@ public interface FlatLayer extends Layer {
 	 * @param dout Dérivée partiel du résultat de la couche
 	 * @return Dérivée partiel des données d'entrée de la couche
 	 */
-	public abstract Matrix backward(Matrix dout);
-
-	/**
-	 * Applique la dérivée calculée lors de la backprop
-	 */
-	public abstract void apply_gradient();
+	public abstract Matrix backward(Matrix dout, boolean train);
 }

@@ -56,28 +56,17 @@ public class DenseLayer implements FlatLayer {
 	}
 
 	@Override
-	public Matrix backward(Matrix dout) {
+	public Matrix backward(Matrix dout, boolean train) {
 		// Pour la propagation arrière, on va dans l'autre sens
 		Matrix next = dout;
 		if (dropout)
-			next = dl.backward(next);
+			next = dl.backward(next, train);
 		if (act != null)
-			next = act.backward(next);
+			next = act.backward(next, train);
 		if (batchnorm)
-			next = bl.backward(next);
-		next = al.backward(next);
+			next = bl.backward(next, train);
+		next = al.backward(next, train);
 		return next;
-	}
-
-	@Override
-	public void apply_gradient() {
-		al.apply_gradient();
-		if (batchnorm)
-			bl.apply_gradient();
-		if (act != null)
-			act.apply_gradient();
-		if (dropout)
-			dl.apply_gradient();
 	}
 
 	@Override
