@@ -15,10 +15,16 @@ public class RMSOptimizer extends Optimizer {
 	HashMap<TrainableMatrix, Matrix> acc_mats;
 	HashMap<TrainableVector, Vector> acc_vec;
 	
+	public double learning_rate;
+	public double learning_rate_decay;
+	
+	
 	public RMSOptimizer(Parameters p) {
 		super(p);
 		acc_mats = new HashMap<>();
 		acc_vec = new HashMap<>();
+		learning_rate = p.get_as_double("lr", 0.001);
+		learning_rate_decay = p.get_as_double("lrdecay", 1);
 	}
 
 	@Override
@@ -38,7 +44,6 @@ public class RMSOptimizer extends Optimizer {
 	@Override
 	public void optimize() {
 		double gamma = p.get_as_double("gamma", 0.9);
-		double lr = p.get_as_double("lr", 0.001);
 		double eps = p.get_as_double("eps", 1e-6);
 		
 		for(Entry<TrainableMatrix, Matrix> entry : acc_mats.entrySet()) {
@@ -51,7 +56,7 @@ public class RMSOptimizer extends Optimizer {
 					acc.v[l][m] = gamma * acc.v[l][m] + (1 - gamma) * w_grad.v[l][m] * w_grad.v[l][m];
 	
 					// grad *= - lr / sqrt(epsilon + acc[t+1])
-					w_grad.v[l][m] *= -lr / (Math.sqrt(eps + acc.v[l][m]));
+					w_grad.v[l][m] *= -learning_rate / (Math.sqrt(eps + acc.v[l][m]));
 	
 					// w += grad
 					w.v[l][m] += w_grad.v[l][m];
@@ -65,10 +70,15 @@ public class RMSOptimizer extends Optimizer {
 			Vector b_grad = b.grad;
 			for (int l = 0; l < acc.length; l++) {
 				acc.v[l] = gamma * acc.v[l] + (1 - gamma) * b_grad.v[l] * b_grad.v[l];
-				b_grad.v[l] *= -lr / (Math.sqrt(eps + acc.v[l]));
+				b_grad.v[l] *= -learning_rate / (Math.sqrt(eps + acc.v[l]));
 				b.v[l] += b_grad.v[l];
 				b_grad.v[l] = 0;
 			}
 		}
+	}
+
+	@Override
+	public void end_of_epoch() {
+		learning_rate *= learning_rate_decay;
 	}
 }

@@ -13,6 +13,18 @@ public class RandomGenerator {
 		r = new Random(seed);
 	}
 
+	public static Matrix normal(double mean, double variance, int width, int height) {
+		if (r == null)
+			r = new Random();
+		Matrix m = new Matrix(width, height);
+		for (int i = 0; i < height ; i++) {
+			for (int j = 0; j < width ; j++) {
+				m.v[i][j] = r.nextGaussian()*variance + mean;
+			}
+		}
+		return m;
+	}
+	
 	/**
 	 * Renvoie un réel au hasard dans une distribution gaussienne avec une variance donnée
 	 */

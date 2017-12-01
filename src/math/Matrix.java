@@ -53,6 +53,10 @@ public class Matrix {
 	 *            Matrice à copier
 	 */
 	public Matrix(Matrix x) {
+		if(x == null) {
+			v = new double[0][0];
+			return;
+		}
 		width = x.width;
 		height = x.height;
 		v = new double[height][width];

@@ -7,10 +7,10 @@ import layers.losses.Loss;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
-import perceptron.MultiLayerPerceptron;
+import perceptron.FlatSequential;
 
 public class QLearn {
-	MultiLayerPerceptron net;
+	FlatSequential net;
 	Environment env;
 	
 	public double epsilon_greed = 0.1;
@@ -23,7 +23,7 @@ public class QLearn {
 
 	ArrayList<Experience> experiences;
 	
-	public QLearn(MultiLayerPerceptron net, Environment env, double epsilon, EpsilonFunction epsilon_strategy) {
+	public QLearn(FlatSequential net, Environment env, double epsilon, EpsilonFunction epsilon_strategy) {
 		this.net = net;
 		this.env = env;
 		this.epsilon_greed = epsilon;
@@ -49,7 +49,7 @@ public class QLearn {
 			batch_next.set_column(i, e.next_s);
 		}
 		
-		Matrix batch_next_result = net.forward(batch_next);
+		Matrix batch_next_result = net.forward(batch_next, false);
 		
 		for (int i = 0; i < mini_batch; i++) {
 			Experience e = experiences.get(sample[i]);
@@ -63,14 +63,14 @@ public class QLearn {
 		
 		}
 		
-		Matrix result = net.forward_train(batch);
+		Matrix result = net.forward(batch, true);
 		Matrix dout = new Matrix(result);
 		for(int i = 0 ; i < mini_batch ; i++) {
 			result.v[experiences.get(sample[i]).a][i] = refs.v[i];
 		}
 		Loss ql = net.get_loss_layer();
 		ql.feed_ref(result);
-		net.backward_train(dout);
+		net.backward(dout, true);
 		loss += ql.loss;
 	}
 	
@@ -94,7 +94,7 @@ public class QLearn {
 				if(RandomGenerator.uniform(0.0, 1.0) < eps) {
 					a = RandomGenerator.uniform_int(0, env.action_size);
 				} else {
-					a = net.forward(env.state.to_column_matrix()).get_column(0).argmax();
+					a = net.forward(env.state.to_column_matrix(), false).get_column(0).argmax();
 				}
 				double reward = env.apply_action(a);
 				this.cumulated_reward += reward;

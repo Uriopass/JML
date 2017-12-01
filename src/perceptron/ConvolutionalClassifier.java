@@ -15,6 +15,7 @@ import math.FeatureMatrix;
 import math.Matrix;
 import math.Vector;
 
+@Deprecated
 public class ConvolutionalClassifier extends ConvolutionalNetwork {
 
 	public int last_correct_count = 0;
@@ -76,7 +77,7 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 				for(int l_ind = layers.size()-1 ; l_ind >= 0 ; l_ind--) {
 					Layer l = layers.get(l_ind);
 					if(l instanceof FlatLayer) {
-						next_m = ((FlatLayer)l).backward(next_m);
+						next_m = ((FlatLayer)l).backward(next_m, true);
 						//System.out.println("applying " + l + " m is now "+next_m);
 					} else if(l instanceof FeatureLayer) {
 						next_fm = ((FeatureLayer)l).backward(next_fm);
@@ -96,6 +97,7 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 			}
 			last_average_loss /= mini_batch;
 			//System.out.println(last_correct_count);
+			/*
 			for(Layer l : layers) {
 				if(l instanceof FlatLayer) {
 					((FlatLayer)l).apply_gradient();
@@ -103,10 +105,12 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 					((FeatureLayer)l).apply_gradient();
 				}
 			}
+			*/
 			
 		}
 		last_average_loss /= data.width / mini_batch;
 		
+		/*
 		for(Layer l : layers) {
 			if(l instanceof BatchnormLayer) {
 				((BatchnormLayer)l).end_of_epoch();
@@ -115,12 +119,13 @@ public class ConvolutionalClassifier extends ConvolutionalNetwork {
 				((AffineLayer)l).end_of_epoch();
 			}
 		}
+		*/
 		System.out.print("] ");
 		//System.out.println(biases[0] + " " + biases[1]);
 	}
 
 	public double correct_count(Matrix data, int[] refs) {
-		Matrix next = forward(data);
+		Matrix next = forward(data, false);
 		int correct = 0;
 		for(double d : next.argmax(Matrix.AXIS_HEIGHT).add(new Vector(refs).scale(-1)).v) {
 			correct += Math.abs(d) < 1e-8 ? 1 : 0;

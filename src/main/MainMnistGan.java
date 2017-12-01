@@ -16,7 +16,7 @@ import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
 import perceptron.MLPMetrics;
-import perceptron.MultiLayerPerceptron;
+import perceptron.FlatSequential;
 
 public class MainMnistGan {
 	// Chemin vers les données
@@ -27,10 +27,10 @@ public class MainMnistGan {
 	public static GenerativeAdversarialNetwork model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 20;
+	public final static int EPOCHMAX = 30;
 
 	// Nombre de données d'entrainements
-	public static final int N = 8000;
+	public static final int N = 16000;
 
 	// Matrices de données
 	public static Matrix train_data;
@@ -74,8 +74,7 @@ public class MainMnistGan {
 		RandomGenerator.init(seed);
 		System.out.println("# Seed : " + seed);
 
-		// On crée notre modèle vide avec un mini_batch de 40
-		model = new GenerativeAdversarialNetwork(784, 30);
+		model = new GenerativeAdversarialNetwork(784, 8);
 		load_data();
 		
 		System.out.println("# Processors : " + Runtime.getRuntime().availableProcessors());
@@ -89,34 +88,43 @@ public class MainMnistGan {
 
 		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
 
-		int mini_batch = 20;
+		int mini_batch = 32;
+		int counterlala = 0;
 		
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
 
 			int tenth = train_data.width / (mini_batch * 10);
 			System.out.print("[");
+			Vector total_loss = new Vector(2);
+			double l1=0, l2=0;
 			for (int k = 0; k < train_data.width / mini_batch; k++) {
 				if(k%tenth == 0) {
 					System.out.print("=");
+					System.out.println(l1 + " " + l2);
+					model.test_generator().T().visualize("fig2/test_gan"+(counterlala++), 28, 10, 10, true, true);
 				}
-			
-				model.train_gan(20, train_data, k*mini_batch, (k+1)*mini_batch);
+
+				l1 = model.train_discriminator(32, train_data, k*mini_batch, (k+1)*mini_batch);
+				l2 = model.train_generator(64);
+				total_loss.v[0] += l1;
+				total_loss.v[1] += l2;
 			}
+			total_loss.scale(1. / (train_data.width / mini_batch));
 			System.out.print("] ");
+			
+			System.out.println(total_loss);
 
 			// Temps que cela a pris pour effectuer l'époque
 			double epoch_time = (System.currentTimeMillis() - t) / 1000.;
 
-			t = System.currentTimeMillis();
+			t = System.currentTimeMillis(); 
 			
 			System.out.print(i + ((i >= 10) ? " " : "  "));
 			System.out.print("epoch time " + df2.format(epoch_time) + "s ");
 
 			// Temps avant la fin de l'entraînement
 			System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
-			
-			model.test_generator(10).T().visualize("test_gan", 28, 10, 1, true, true);
 		}
 	}
 }

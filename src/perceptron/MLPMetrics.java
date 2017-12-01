@@ -31,7 +31,7 @@ public class MLPMetrics {
 		this.loss.add(loss);
 	}
 
-	public void measure_and_write(String base_path, MultiLayerPerceptron model, Matrix data, int[] refs, boolean confusion_as_csv) {
+	public void measure_and_write(String base_path, FlatSequential model, Matrix data, int[] refs, boolean confusion_as_csv) {
 		Matrix confusion = model.confusion_matrix(data, refs);
 		Matrix k_wrongest = model.k_wrongest_data(data, refs, 10);
 		Matrix average_classes = model.average_data_by_class(data);

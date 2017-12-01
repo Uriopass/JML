@@ -1,94 +1,109 @@
 package gan;
 
-import java.util.ArrayList;
-
-import layers.FlatLayer;
 import layers.Parameters;
-import layers.flat.ConstantLayer;
-import layers.flat.DenseLayer;
-import layers.flat.GaussianNoise;
-import layers.losses.EntropyLoss;
+import layers.activations.LeakyReluActivation;
+import layers.activations.SigmoidActivation;
+import layers.flat.AffineLayer;
+import layers.flat.DropoutLayer;
 import layers.losses.Loss;
+import layers.losses.SigmoidBinaryEntropyLoss;
 import math.Matrix;
+import math.RandomGenerator;
+import optimizers.RMSOptimizer;
+import perceptron.FlatSequential;
 
 public class GenerativeAdversarialNetwork {
 	int latent_space;
 	int input_size;
-	ArrayList<FlatLayer> generator;
-	ArrayList<FlatLayer> discriminator;
+	public FlatSequential generator, discriminator;
 	
+	public Matrix coordinates;
+
 	public GenerativeAdversarialNetwork(int input_size, int latent_space_size) {
 		this.latent_space = latent_space_size;
 		this.input_size = input_size;
-		
-		generator = new ArrayList<>();
-		discriminator = new ArrayList<>();
-		
-		Parameters p = new Parameters("lr=0.001", "reg=0", "dout=false");
-		
-		generator.add(new ConstantLayer(1, latent_space_size, 0));
-		generator.add(new GaussianNoise(1));
-		generator.add(new DenseLayer(latent_space_size, 200, 0, "tanh", true, p));
+
+		Parameters p = new Parameters("lr=0.001", "reg=0.0005", "dout=false");
+
+		generator = new FlatSequential(new RMSOptimizer(p));
+		discriminator = new FlatSequential(new RMSOptimizer(p));
+
+		generator.add(new AffineLayer(latent_space_size, 256, true, p));
+		generator.add(new LeakyReluActivation(0.2));
 		p.set("dout", "true");
-		generator.add(new DenseLayer(200, 400, 0, "tanh", true, p));
-		generator.add(new DenseLayer(400, 600, 0, "tanh", true, p));
-		generator.add(new DenseLayer(600, input_size, 0, "sigmoid", true, p));
+		generator.add(new AffineLayer(256, 512, true, p));
+		generator.add(new LeakyReluActivation(0.2));
+		generator.add(new AffineLayer(512, 1024, true, p));
+		generator.add(new LeakyReluActivation(0.2));
+		generator.add(new AffineLayer(1024, 784, true, p));
+		generator.add(new SigmoidActivation());
 		
-		discriminator.add(new DenseLayer(784, 500, 0, "tanh", true, p));
-		discriminator.add(new DenseLayer(500, 100, 0, "tanh", true, p));
-		discriminator.add(new DenseLayer(100, 1, 0, "sigmoid", false, p));
-		discriminator.add(new EntropyLoss());
+		discriminator.add(new AffineLayer(784, 1024, true, p));
+		discriminator.add(new LeakyReluActivation(0.2));
+		discriminator.add(new DropoutLayer(0.3));
+		discriminator.add(new AffineLayer(1024, 512, true, p));
+		discriminator.add(new LeakyReluActivation(0.2));
+		discriminator.add(new DropoutLayer(0.3));
+		discriminator.add(new AffineLayer(512, 256, true, p));
+		discriminator.add(new LeakyReluActivation(0.2));
+		discriminator.add(new DropoutLayer(0.3));
+		discriminator.add(new AffineLayer(256, 1, true, p));
+		discriminator.add(new SigmoidBinaryEntropyLoss());
+		
+		coordinates = RandomGenerator.normal(0, 1, 100, latent_space_size);
+		
 	}
-	
-	public Vector train_gan(int samples, Matrix real_data, int start, int end) {
-		
+	int counter = 0;
+	public double train_discriminator(int samples, Matrix real_data, int start, int end) {
 		// Generate images
-		((ConstantLayer) generator.get(0)).width = samples+(end-start);
-		Matrix forward = null;
-		for(FlatLayer l : generator) {
-			forward = l.forward(forward, true);
-		}
+		Matrix base = RandomGenerator.normal(0, 1, samples, latent_space);
+		Matrix generated = generator.forward(base, false);
+
+		Matrix fw = new Matrix(samples + (end-start), 784);
 		
 		// Add real images
-		for(int i = start ; i < end ; i++) {
-			forward.set_column(i-start, real_data.get_column(i));
+		for (int i = 0; i < end - start; i++) {
+			fw.set_column(i, real_data.get_column(i + start));
+		}
+		for (int i = 0; i < samples; i++) {
+			fw.set_column(i+(end-start), generated.get_column(i));
 		}
 		
-		// Discriminate
-		for(FlatLayer l : discriminator) {
-			forward = l.forward(forward, true);
-		}
-		
+		//((DenseLayer)discriminator.get_layers().get(0)).al.matrices.get("w").visualize("fig/okok"+(counter++), 28, 10, 3, true, false);
+		//fw.T().visualize("fig/okok"+(counter++), 28, fw.width, 1, true, true);
+		fw = discriminator.forward(fw, true);
 		// Feed discriminator references
-		Loss l = ((Loss)discriminator.get(discriminator.size()-1));
-		Matrix refs_d = new Matrix(samples, 1);
-		for(int i = 0 ; i < end-start ; i++) {
-			refs_d.v[0][i+samples] = 1;
+		Loss l = discriminator.get_loss_layer();
+		Matrix refs_d = new Matrix(samples + (end - start), 1);
+		for (int i = 0; i < end - start; i++) {
+			refs_d.v[0][i] = 1;
 		}
 		l.feed_ref(refs_d);
-		
+
 		// Train discriminator
-		Matrix backward = l.backward(forward);
-		
-		for(int i = discriminator.size()-1 ; i >= 0 ; i--) {
-			backward = discriminator.get(i).backward(backward);
-			discriminator.get(i).apply_gradient();
-		}
-		
-		
-		
-		for(int i = generator.size()-1 ; i >= 0 ; i--) {
-			backward = generator.get(i).backward(backward);
-			generator.get(i).apply_gradient();
-		}
+		discriminator.backward(fw, true);
+		return discriminator.get_loss_layer().loss;
 	}
-	
-	public Matrix test_generator(int samples) {
-		((ConstantLayer) generator.get(0)).width = samples;
-		Matrix forward = null;
-		for(FlatLayer l : generator) {
-			forward = l.forward(forward, true);
-		}
-		return forward;
+
+	public double train_generator(int samples) {
+		// Regenerate images
+		Matrix base = RandomGenerator.normal(0, 1, samples, latent_space);
+		Matrix fw = generator.forward(base, true);
+
+		// Discriminate
+		fw = discriminator.forward(fw, true);
+		Loss l = discriminator.get_loss_layer();
+		// Pretends it's genuine
+		Matrix refs_d = new Matrix(samples, 1).fill(1);
+		l.feed_ref(refs_d);
+
+		// Find dout from image
+		Matrix back = discriminator.backward(fw, false);
+		// Learn to better generate
+		generator.backward(back, true);
+		return discriminator.get_loss_layer().loss;
+	}
+	public Matrix test_generator() {
+		return generator.forward(coordinates, false);
 	}
 }

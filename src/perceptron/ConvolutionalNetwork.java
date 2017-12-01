@@ -24,7 +24,7 @@ public class ConvolutionalNetwork extends FeedForwardNetwork {
 	}
 	
 	@Override
-	public Matrix forward(Matrix data) {
+	public Matrix forward(Matrix data, boolean train) {
 		Matrix result = null;
 		for(int i = 0 ; i < data.width ; i++) {
 			Matrix d = new Matrix(1, data.height);

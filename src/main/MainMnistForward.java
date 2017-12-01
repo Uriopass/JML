@@ -14,8 +14,9 @@ import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
+import optimizers.RMSOptimizer;
 import perceptron.MLPMetrics;
-import perceptron.MultiLayerPerceptron;
+import perceptron.FlatSequential;
 
 public class MainMnistForward {
 
@@ -27,7 +28,7 @@ public class MainMnistForward {
 	static String test_labelDB = path + "t10k-labels.idx1-ubyte";
 	static String test_imageDB = path + "t10k-images.idx3-ubyte";
 
-	public static MultiLayerPerceptron model;
+	public static FlatSequential model;
 
 	// Nombre d'epoque max
 	public final static int EPOCHMAX = 20;
@@ -120,11 +121,11 @@ public class MainMnistForward {
 		RandomGenerator.init(seed);
 		System.out.println("# Seed : " + seed);
 
-		// On crée notre modèle vide avec un mini_batch de 40
-		model = new MultiLayerPerceptron(40);
-		load_data();
 		// Paramètres du modele
 		Parameters p = new Parameters("reg=0.00005", "lr=0.01");
+		// On crée notre modèle vide avec un mini_batch de 40
+		model = new FlatSequential(40, new RMSOptimizer(p));
+		load_data();
 
 		// Modèle classique à 4 couches (entrée + cachée + cachée + sortie) avec 1000 et 100 neurones intermédiaires et des activations en sigmoide
 
@@ -162,7 +163,7 @@ public class MainMnistForward {
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
 			// On lance l'époque
-			model.epoch(train_data, train_refs);
+			model.train_on_batch(train_data, train_refs);
 
 			// Temps que cela a pris pour effectuer l'époque
 			double epoch_time = (System.currentTimeMillis() - t) / 1000.;

@@ -10,31 +10,46 @@ import javax.imageio.ImageIO;
 
 import layers.FlatLayer;
 import layers.Layer;
-import layers.flat.AffineLayer;
-import layers.flat.BatchnormLayer;
+import layers.TrainableMatrices;
+import layers.TrainableVectors;
+import layers.flat.DenseLayer;
 import layers.losses.Loss;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
+import optimizers.Optimizer;
 /**
  * Cette classe représente un autoencoder, qui apprends donc sans label à regénérer une image donnée, souvent utilisé pour réduire le nombre de dimensions utile.
  */
 public class AutoEncoder extends FeedForwardNetwork {
-	ArrayList<FlatLayer> layers;
+	private ArrayList<FlatLayer> layers;
+	Optimizer opt;
 
-	public AutoEncoder(int mini_batch) {
+	public AutoEncoder(int mini_batch, Optimizer opt) {
 		this.mini_batch = mini_batch;
+		this.opt = opt;
 	}
 	
 	public void add(FlatLayer l) {
 		layers.add(l);
+
+		if(l instanceof TrainableMatrices) {
+			opt.init_mat((TrainableMatrices)l);
+		}
+		if(l instanceof TrainableVectors) {
+			opt.init_vec((TrainableVectors)l);
+		}
+		if(l instanceof DenseLayer) {
+			opt.init_mat(((DenseLayer) l).al);
+			opt.init_vec(((DenseLayer) l).al);
+		}
 	}
 
 	@Override
-	public Matrix forward(Matrix data) {
+	public Matrix forward(Matrix data, boolean train) {
 		Matrix next = new Matrix(data);
 		for (FlatLayer l : layers) {
-			next = l.forward(next, false);
+			next = l.forward(next, train);
 		}
 		return next;
 	}
@@ -46,7 +61,7 @@ public class AutoEncoder extends FeedForwardNetwork {
 	 * @param num nombre d'image à visualiser
 	 */
 	public void write_diff(Matrix data, String name, int num) {
-		Matrix result = forward(data);
+		Matrix result = forward(data, false);
 		int dimension = 28;
 		int scale = 1;
 		int height = num;
@@ -123,22 +138,15 @@ public class AutoEncoder extends FeedForwardNetwork {
 
 			// Propagation arrière
 			for (int j = layers.size() - 1; j >= 0; j--) {
-				dout = layers.get(j).backward(dout);
-				layers.get(j).apply_gradient();
+				dout = layers.get(j).backward(dout, true);
 			}
+			opt.optimize();
 			last_average_loss += l.loss;
 		}
 		last_average_loss /= data.width / mini_batch;
 
 		// Fin d'époque
-		for (FlatLayer l : layers) {
-			if (l instanceof BatchnormLayer) {
-				((BatchnormLayer) l).end_of_epoch();
-			}
-			if (l instanceof AffineLayer) {
-				((AffineLayer) l).end_of_epoch();
-			}
-		}
+		opt.end_of_epoch();
 		System.out.print("] ");
 	}
 

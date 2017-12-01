@@ -7,23 +7,20 @@ import layers.FlatLayer;
 import layers.Layer;
 import layers.TrainableMatrices;
 import layers.TrainableVectors;
-import layers.flat.AffineLayer;
-import layers.flat.BatchnormLayer;
 import layers.flat.DenseLayer;
 import layers.losses.Loss;
 import math.Matrix;
 import math.RandomGenerator;
-import math.TrainableMatrix;
 import math.Vector;
 import optimizers.Optimizer;
 
 /**
  * Classe principale de perceptron multi couches
  */
-public class MultiLayerPerceptron extends FeedForwardNetwork {
+public class FlatSequential extends FeedForwardNetwork {
 
 	// Couches
-	public ArrayList<FlatLayer> layers;
+	private ArrayList<FlatLayer> layers;
 	public int last_correct_count = 0;
 	
 	Optimizer opt;
@@ -41,13 +38,22 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			opt.init_vec(((DenseLayer) l).al);
 		}
 	}
-
+	
+	public ArrayList<FlatLayer> get_layers() {
+		return layers;
+	}
+	
 	/**
 	 * @param batch_size Taille du batch à utiliser
 	 */
-	public MultiLayerPerceptron(int batch_size, Optimizer opt) {
+	public FlatSequential(int batch_size, Optimizer opt) {
 		layers = new ArrayList<FlatLayer>();
 		this.mini_batch = batch_size;
+		this.opt = opt;
+	}
+	
+	public FlatSequential(Optimizer opt) {
+		layers = new ArrayList<FlatLayer>();
 		this.opt = opt;
 	}
 
@@ -55,21 +61,10 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	 * Passe un ensemble de donnée à travers le réseau, sans modifier l'ensemble de départ
 	 */
 	@Override
-	public Matrix forward(Matrix data) {
+	public Matrix forward(Matrix data, boolean train) {
 		Matrix next = new Matrix(data);
 		for (FlatLayer l : layers) {
-			next = l.forward(next, false);
-		}
-		return next;
-	}
-
-	/**
-	 * Passe un ensemble de données à travers le réseau dans une optique d'apprentissage
-	 */
-	public Matrix forward_train(Matrix data) {
-		Matrix next = new Matrix(data);
-		for (FlatLayer l : layers) {
-			next = l.forward(next, true);
+			next = l.forward(next, train);
 		}
 		return next;
 	}
@@ -77,12 +72,16 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	/**
 	 * Calcule les dérivées partielles couches à couches, en appliquant le gradient à chaque fois.
 	 * Nécessite d'avoir fait une passe de forward_train avant.
+	 * @return 
 	 */
-	public void backward_train(Matrix dout) {
+	public Matrix backward(Matrix dout, boolean train) {
 		for (int j = layers.size() - 1; j >= 0; j--) {
-			dout = layers.get(j).backward(dout, true);
-			layers.get(j).apply_gradient();
+			dout = layers.get(j).backward(dout, train);
 		}
+		if(train) {
+			opt.optimize();
+		}
+		return dout;
 	}
 
 	/**
@@ -90,7 +89,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	 * @param data données à apprendre
 	 * @param refs labels représentant la vérité
 	 */
-	public void epoch(Matrix data, Matrix refs) {
+	public void train_on_batch(Matrix data, Matrix refs) {
 		
 		if(data.width % mini_batch != 0) {
 			System.err.println("Le nombre de données ne sont pas divisble par mini_batch, "+(data.width%mini_batch)+" données seront ignorées.");
@@ -132,7 +131,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			}
 
 			// Propagation avant
-			batch = forward_train(batch);
+			batch = forward(batch, true);
 			Vector predicted = batch.argmax(Matrix.AXIS_HEIGHT);
 			Vector right = refs_v.argmax(Matrix.AXIS_HEIGHT);
 			last_correct_count += predicted.add(right.scale(-1)).count_zeros();
@@ -143,28 +142,21 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 			l.feed_ref(refs_v);
 
 			// Propagation arrière
-			backward_train(dout);
+			backward(dout, true);
 
 			last_average_loss += l.loss;
 		}
 		last_average_loss /= data.width / mini_batch;
 
-		// Fin d'époque
-		for (FlatLayer l : layers) {
-			if (l instanceof BatchnormLayer) {
-				((BatchnormLayer) l).end_of_epoch();
-			}
-			if (l instanceof AffineLayer) {
-				((AffineLayer) l).end_of_epoch();
-			}
-		}
+		opt.end_of_epoch();
+		
 		System.out.print("] ");
 	}
 
 	public double get_loss(Matrix data, int[] refs) {
-		Matrix end = forward(data);
+		Matrix end = forward(data, false);
 		get_loss_layer().feed_ref(Loss.from_int_refs(refs, end.height));
-		get_loss_layer().backward(end);
+		get_loss_layer().backward(end, false);
 		return get_loss_layer().loss;
 	}
 	
@@ -176,7 +168,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	 * Ainsi confusion.v[0][2] contient le nombre de fois que le réseau a reconnu le 0è label alors que la vérité était le 2è label
 	 */
 	public Matrix confusion_matrix(Matrix data, int[] refs) {
-		Matrix end = forward(data);
+		Matrix end = forward(data, false);
 		Matrix confusion_matrix = new Matrix(end.height, end.height);
 
 		for (int i = 0; i < refs.length; i++) {
@@ -196,7 +188,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	 * @return k_max (1 - forward(data)[correct]) 
 	 */
 	public Matrix k_wrongest_data(Matrix data, int[] refs, int k) {
-		Matrix end = forward(data);
+		Matrix end = forward(data, false);
 
 		Matrix wrongest = new Matrix(k, data.height);
 
@@ -219,7 +211,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	 * 
 	 */
 	public Matrix average_data_by_class(Matrix data) {
-		Matrix end = forward(data);
+		Matrix end = forward(data, false);
 		Matrix average = new Matrix(end.height, data.height);
 		Vector nb_k = new Vector(end.height);
 
@@ -238,8 +230,7 @@ public class MultiLayerPerceptron extends FeedForwardNetwork {
 	 * Compte le nombre de données classifiées correctement
 	 */
 	public int correct_count(Matrix data, Matrix refs) {
-		int ok = 0;
-		Matrix end = forward(data);
+		Matrix end = forward(data, false);
 		Vector predicted = end.argmax(Matrix.AXIS_HEIGHT);
 		return predicted.add(refs.argmax(Matrix.AXIS_HEIGHT).scale(-1)).count_zeros();
 	}

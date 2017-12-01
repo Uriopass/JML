@@ -13,4 +13,6 @@ public abstract class Optimizer {
 	public abstract void init_mat(TrainableMatrices layer);
 	public abstract void init_vec(TrainableVectors layer);
 	public abstract void optimize();
+
+	public abstract void end_of_epoch();
 }
