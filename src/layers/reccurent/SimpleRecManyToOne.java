@@ -41,8 +41,16 @@ public class SimpleRecManyToOne implements TrainableMatrices, TrainableVectors {
 	}
 	
 	public void tick(Matrix in, boolean training) {
-		Matrix in_c = new Matrix(1, in.height+state.height);
-		in_c.set_column(0, in.get_column(0).append(state.get_column(0)));
+		Matrix in_c = new Matrix(in.width, in.height+state.height);
+		
+		for(int i = 0 ; i < in_c.width ; i++) {
+			for(int j = 0 ; j < in.height ; j++) {
+				in_c.v[j][i] = in.v[j][i];
+			}
+			for(int j = 0 ; j < state.height ; j++) {
+				in_c.v[j+in.height][i] = state.v[j][i];
+			}
+		}
 		if(training)
 			caches.add(in_c);
 		state = state_act.forward(state_aff.forward(in_c, false), training);
@@ -58,10 +66,15 @@ public class SimpleRecManyToOne implements TrainableMatrices, TrainableVectors {
 		for(int i = caches.size()-1 ; i >= 0 ; i--) {
 			Matrix dact = state_act.backward(dhid, train);
 			state_aff.setCache(caches.get(i));
+			//System.out.print(i+" ");
+			//caches.get(i).T().print_values();
+			//dact.T().print_values();
 			Matrix dcach = state_aff.backward(dact, train);
 			
-			for(int j = 0 ; j < state_size ; j++) {
-				dhid.v[j][0] = dcach.v[fan_in+j][0];
+			for(int w = 0 ; w < dcach.width ; w++) {
+				for(int j = 0 ; j < state_size ; j++) {
+					dhid.v[j][w] = dcach.v[fan_in+j][w];
+				}
 			}
 		}
 	}

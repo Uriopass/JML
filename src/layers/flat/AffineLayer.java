@@ -11,6 +11,7 @@ import math.Initialisations;
 import math.Matrix;
 import math.TrainableMatrix;
 import math.TrainableVector;
+import math.Vector;
 
 /**
  * Cette classe correspond à une transformation affine avec biais d'un espace de fan_in dimensions vers fan_out dimensions.
@@ -99,6 +100,14 @@ public class AffineLayer implements FlatLayer, TrainableMatrices, TrainableVecto
 			return null;
 
 		return matrices.get("w").T().parralel_mult(dout);
+	}
+	
+	public Matrix get_weight() {
+		return matrices.get("w");
+	}
+
+	public Vector get_bias() {
+		return vectors.get("b");
 	}
 
 	@Override

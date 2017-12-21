@@ -30,6 +30,7 @@ public class MainTestRecurrent {
 		dico.put('ç', 30);
 		dico.put(' ', 31);
 		dico.put('-', 32);
+		dico.put('>', 33);
 	}
 	
 	public static ArrayList<Matrix> data, refs;
@@ -51,12 +52,13 @@ public class MainTestRecurrent {
 			String[] yes = line.split(";");
 			String mot = yes[0];
 			int x = Integer.parseInt(yes[1]);
-			Matrix alright = new Matrix(mot.length(), dico.size());
+			Matrix alright = new Matrix(mot.length()+1, dico.size());
 			int counter = 0;
 			for(char c : mot.toCharArray()) {
 				alright.set_column(counter, Vector.one_hot(dico.size(), dico.get(c)));
 				counter++;
 			}
+			alright.set_column(counter, Vector.one_hot(dico.size(), dico.get('>')));
 			data.add(alright);
 			refs.add(new Matrix(1, 2).set_column(0, Vector.one_hot(2, x)));
 		}
@@ -64,18 +66,41 @@ public class MainTestRecurrent {
 		sc.close();
 	}
 	
+	public static String matrix_to_name(Matrix d) {
+		String s = "";
+		
+		for(int i = 0 ; i < d.width ; i++) {
+			Vector v = d.get_column(i);
+			int x = v.argmax();
+			for(Character c : dico.keySet()) {
+				if(dico.get(c) == x) {
+					s += c;
+					break;
+				}
+			}
+		}
+		
+		return s;
+	}
+	
+	public static String out_to_genre(Vector v) {
+		if(v.argmax() == 0)
+			return "feminin";
+		return "masculin";
+	}
+	
 	public static void main(String[] args) {
 		load_data();
 		// On initialise le générateur aléatoire
 		long time = System.currentTimeMillis();
-		seed = 1510437982659L;
+		seed = System.currentTimeMillis();
 		RandomGenerator.init(seed);
 		System.out.println("# Seed : " + seed);
 
 		// Paramètres du modele
 		Parameters p = new Parameters("reg=0", "lr=0.001");
 
-		SimpleRecManyToOne model = new SimpleRecManyToOne(dico.size(), 2, true, 30, "sigmoid", p);
+		SimpleRecManyToOne model = new SimpleRecManyToOne(dico.size(), 2, true, 1, "tanh", p);
 		SoftmaxCrossEntropy loss = new SoftmaxCrossEntropy();
 		RMSOptimizer rmsopt = new RMSOptimizer(p);
 		rmsopt.init_mat(model);
@@ -85,7 +110,7 @@ public class MainTestRecurrent {
 
 		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
 
-		for (int i = 1; i <= 1; i++) {
+		for (int epoch = 1; epoch <= 1; epoch++) {
 			//long t = System.currentTimeMillis();
 			model.initRec();
 			double lossAverage = 0;
@@ -108,13 +133,37 @@ public class MainTestRecurrent {
 					correct++;
 				}
 				
-				if((k+1)%100 == 0) {
-					System.out.println(correct);
+				if((k+1)%1000 == 0) {
+					System.out.println(correct + " " + lossAverage/1000 + " " + (k+1) + " " + data.size() +" "+
+							model.state_aff.get_weight().sum());
 					correct = 0;
+					lossAverage = 0;
 				}
 			}
 			System.out.println(System.currentTimeMillis()-haha);
 			System.out.println("EPOCH END");
+			model.state_aff.get_weight().print_values();
+			System.out.println( "--");
+			model.out_aff.get_weight().print_values();
+			System.out.println(model.out_aff.get_bias());
+			for(int i = 0 ; i < 5 ; i++) {
+				int indice = RandomGenerator.uniform_int(data.size());
+				System.out.println("example of state for "+matrix_to_name(data.get(indice)));
+				Matrix d = data.get(indice);
+				
+				model.initRec();
+				model.state.T().print_values();
+				for(int l = 0 ; l < d.width ; l++) {
+					model.tick(d.get_column(l).to_column_matrix(), false);
+					System.out.println(matrix_to_name(d.get_column(l).to_column_matrix())+" " + model.state.get_column(0));
+				}
+				Matrix out = model.get_out(false);
+				out.T().print_values();
+				refs.get(indice).T().print_values();
+			
+				System.out.println(out_to_genre(out.get_column(0)));
+			}
 		}
+		
 	}
 }

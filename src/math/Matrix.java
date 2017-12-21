@@ -436,15 +436,18 @@ public class Matrix {
 		return Matrix.parralel_mult(this, b);
 	}
 
+	public static final int threadNumber = Runtime.getRuntime().availableProcessors();
+	
 	public static Matrix parralel_mult(Matrix A, Matrix B) {
 		if (B.height != A.width) {
 			throw new RuntimeException(
 					"Incompatible shape with " + A.shape() + " and " + B.shape() + " " + A.width + " != " + B.height);
 		}
-
-		int threadNumber = Runtime.getRuntime().availableProcessors();
+		int threadNumber = Matrix.threadNumber;
 		while (A.height % threadNumber != 0)
 			threadNumber--;
+		if(A.shape().min()+B.shape().min() < 100)
+			return A.mult(B);
 		if (threadNumber == 1) {
 			return A.mult(B);
 		}

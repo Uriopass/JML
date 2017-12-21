@@ -17,6 +17,10 @@ public class RMSOptimizer extends Optimizer {
 	
 	public double learning_rate;
 	public double learning_rate_decay;
+	public double clip_low_bound;
+	public double clip_high_bound;
+	
+	
 	
 	
 	public RMSOptimizer(Parameters p) {
@@ -25,6 +29,8 @@ public class RMSOptimizer extends Optimizer {
 		acc_vec = new HashMap<>();
 		learning_rate = p.get_as_double("lr", 0.001);
 		learning_rate_decay = p.get_as_double("lrdecay", 1);
+		clip_low_bound = p.get_as_double("clip_l", Double.NEGATIVE_INFINITY);
+		clip_high_bound = p.get_as_double("clip_h", Double.POSITIVE_INFINITY);
 	}
 
 	@Override
@@ -60,6 +66,9 @@ public class RMSOptimizer extends Optimizer {
 	
 					// w += grad
 					w.v[l][m] += w_grad.v[l][m];
+					w.v[l][m] = Math.min(clip_high_bound, Math.max(clip_low_bound, w.v[l][m]));
+					
+					
 					w_grad.v[l][m] = 0;
 				}
 			}
