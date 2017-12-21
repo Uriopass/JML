@@ -12,12 +12,7 @@ import math.Matrix;
 import math.TrainableMatrix;
 import math.TrainableVector;
 
-/**
- * Cette classe correspond à une transformation affine avec biais d'un espace de fan_in dimensions vers fan_out dimensions.
- * On peut donc représenter cela par une matrice W et un vecteur b tel que 
- * - y = Wx + b
- */
-public class AffineLayer implements FlatLayer, TrainableMatrices, TrainableVectors {
+public class AffineResidualLayer implements FlatLayer, TrainableMatrices, TrainableVectors {
 	private Matrix cache;
 
 	// Régularisation L2
@@ -42,9 +37,9 @@ public class AffineLayer implements FlatLayer, TrainableMatrices, TrainableVecto
 	 * 1 -lrdecay - decay du taux d'apprentissage
 	 * true - dout - calculer dout ou non
 	 */
-	public AffineLayer(int fan_in, int fan_out, boolean init, Parameters p) {
-		this.fan_in = fan_in;
-		this.fan_out = fan_out;
+	public AffineResidualLayer(int fan, boolean init, Parameters p) {
+		this.fan_in = fan;
+		this.fan_out = fan;
 		
 		matrices.put("w", new TrainableMatrix(fan_in, fan_out));
 
@@ -64,30 +59,17 @@ public class AffineLayer implements FlatLayer, TrainableMatrices, TrainableVecto
 
 	@Override
 	public Matrix forward(Matrix in, boolean training) {
-		if (training)
-			cache = new Matrix(in);
+		cache = new Matrix(in);
 		Matrix next = matrices.get("w").parralel_mult(in);
 		next.add(vectors.get("b"), Matrix.AXIS_WIDTH);
+		next.add(cache);
 		return next;
 	}
 
-	/**
-	 * Use this with precaution
-	 */
-	public void setCache(Matrix cache) {
-		this.cache = cache;
-	}
+	
 	
 	@Override
 	public Matrix backward(Matrix dout, boolean train) {
-		// A noter que pour aller plus vite, on parralélise la multiplication de matrice avec parralel_mult
-
-		// Propagation arrière :
-
-		// Ici dout correspond aux dérivées partielles sur y
-		// w' = dout*(x.T) / mini_batch + reg*w
-		// b' = moyennes des valeurs de dout sur l'axe du mini batch
-		// x' = (w.T)*dout
 		if(train) {	
 			matrices.get("w").grad.add(dout.parralel_mult(cache.T()).scale(1.0 / cache.width));
 			if(regularization != 0)
@@ -98,12 +80,12 @@ public class AffineLayer implements FlatLayer, TrainableMatrices, TrainableVecto
 		if (!calculate_dout)
 			return null;
 
-		return matrices.get("w").T().parralel_mult(dout);
+		return dout.add(matrices.get("w").T().parralel_mult(dout));
 	}
 
 	@Override
 	public String toString() {
-		return "AffineLayer(" + fan_in + ", " + fan_out + ", reg=" + regularization
+		return "AffineResidualLayer(" + fan_in + ", reg=" + regularization
 			 + ((calculate_dout) ? "" : ", dout=false") + ")";
 	}
 

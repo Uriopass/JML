@@ -9,14 +9,18 @@ import java.util.Locale;
 import datareaders.MnistReader;
 import image.ImageConverter;
 import layers.Parameters;
+import layers.activations.TanhActivation;
+import layers.flat.AffineResidualLayer;
+import layers.flat.BatchnormLayer;
 import layers.flat.DenseLayer;
 import layers.losses.SoftmaxCrossEntropy;
+import layers.reccurent.SimpleRecManyToOne;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
 import optimizers.RMSOptimizer;
-import perceptron.MLPMetrics;
 import perceptron.FlatSequential;
+import perceptron.MLPMetrics;
 
 public class MainMnistForward {
 
@@ -122,7 +126,7 @@ public class MainMnistForward {
 		System.out.println("# Seed : " + seed);
 
 		// Paramètres du modele
-		Parameters p = new Parameters("reg=0.00005", "lr=0.01");
+		Parameters p = new Parameters("reg=0.00005", "lr=0.001");
 		// On crée notre modèle vide avec un mini_batch de 40
 		model = new FlatSequential(40, new RMSOptimizer(p));
 		load_data();
@@ -133,7 +137,19 @@ public class MainMnistForward {
 		p.set("dout", "false");
 		model.add(new DenseLayer(784, 500, 0, "tanh", true, p));
 		p.set("dout", "true");
+		model.add(new AffineResidualLayer(500, false, p));
+		model.add(new BatchnormLayer(500, p));
+		model.add(new TanhActivation());
+		model.add(new AffineResidualLayer(500, false, p));
+		model.add(new BatchnormLayer(500, p));
+		model.add(new TanhActivation());
 		model.add(new DenseLayer(500, 100, 0, "tanh", true, p));
+		model.add(new AffineResidualLayer(100, false, p));
+		model.add(new BatchnormLayer(100, p));
+		model.add(new TanhActivation());
+		model.add(new AffineResidualLayer(100, false, p));
+		model.add(new BatchnormLayer(100, p));
+		model.add(new TanhActivation());
 		model.add(new DenseLayer(100, 10, 0, "none", false, p));
 		// Fonction de coût entropie croisée avec softmax
 		model.add(new SoftmaxCrossEntropy());
