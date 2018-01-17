@@ -18,6 +18,7 @@ public class ActivationParser {
 		case "softplus":
 			return new SoftplusActivation();
 		default:
+			System.out.println("# WARNING: Activation not found - \""+name+"\"");
 			return null;
 		}
 	}
