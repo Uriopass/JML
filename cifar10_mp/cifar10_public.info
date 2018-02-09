@@ -1,0 +1,16 @@
+usage = 'dataset cifar10'
+name = 'cifar10'
+task = 'multiclass.classification'
+target_type = 'Numerical'
+feat_type = 'Numerical'
+metric = 'accuracy_metric'
+time_budget =  1200
+feat_num =     256
+target_num =     1
+label_num =     10
+train_num =   40000
+valid_num =    10000
+test_num =    10000
+has_categorical =     0
+has_missing =     0
+is_sparse =     0

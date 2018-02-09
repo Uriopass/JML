@@ -446,7 +446,7 @@ public class Matrix {
 		int threadNumber = Matrix.threadNumber;
 		while (A.height % threadNumber != 0)
 			threadNumber--;
-		if(A.shape().min()+B.shape().min() < 100)
+		if(A.shape().min()+B.shape().min() < 50)
 			return A.mult(B);
 		if (threadNumber == 1) {
 			return A.mult(B);

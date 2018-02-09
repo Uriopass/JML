@@ -102,7 +102,7 @@ public class MainCal101Forward {
 		RandomGenerator.init(seed);
 		System.out.println("# Seed : " + seed);
 
-		Parameters p = new Parameters("reg=0.000001", "lr=0.001", "lrdecay=0.99");
+		Parameters p = new Parameters("reg=0.00000001", "lr=0.001", "lrdecay=0.9");
 		
 		// On crée notre modèle vide avec un mini_batch de 100
 		model = new FlatSequential(100, new RMSOptimizer(p));
