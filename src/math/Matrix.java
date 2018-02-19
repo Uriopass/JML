@@ -18,7 +18,7 @@ import javax.imageio.ImageIO;
  * une surcouche au dessus d'un double tableau de double.
  */
 public class Matrix {
-	// Axe des lignes, utilisé pour effectuer une somme sur un seul axe par exemple
+	// Axe des lignes, utilisï¿½ pour effectuer une somme sur un seul axe par exemple
 	public static final int AXIS_HEIGHT = 0;
 	// Axe des colonnes
 	public static final int AXIS_WIDTH = 1;
@@ -33,7 +33,7 @@ public class Matrix {
 	public int height;
 
 	/**
-	 * Crée une matrice remplie de zéros
+	 * Crï¿½e une matrice remplie de zï¿½ros
 	 * 
 	 * @param width
 	 *            nombre de colonnes
@@ -47,10 +47,10 @@ public class Matrix {
 	}
 
 	/**
-	 * Crée une copie de la matrice passée en argument
+	 * Crï¿½e une copie de la matrice passï¿½e en argument
 	 * 
 	 * @param x
-	 *            Matrice à copier
+	 *            Matrice ï¿½ copier
 	 */
 	public Matrix(Matrix x) {
 		if(x == null) {
@@ -68,12 +68,12 @@ public class Matrix {
 	}
 
 	/**
-	 * Effectue une addition de deux matrices, élément-à-élement.
+	 * Effectue une addition de deux matrices, ï¿½lï¿½ment-ï¿½-ï¿½lement.
 	 * 
 	 * @param a
-	 *            Première matrice à additionner
+	 *            Premiï¿½re matrice ï¿½ additionner
 	 * @param b
-	 *            Deuxième matrice à additionner
+	 *            Deuxiï¿½me matrice ï¿½ additionner
 	 * @return nouvelle matrice contenant la somme
 	 */
 	public static Matrix add(Matrix a, Matrix b) {
@@ -93,10 +93,10 @@ public class Matrix {
 	}
 
 	/**
-	 * Ajoute à tout les élements de cette matrice un scalaire
+	 * Ajoute ï¿½ tout les ï¿½lements de cette matrice un scalaire
 	 * 
 	 * @param value
-	 *            scalaire à ajouter
+	 *            scalaire ï¿½ ajouter
 	 * @return this
 	 */
 	public Matrix add(double value) {
@@ -109,10 +109,10 @@ public class Matrix {
 	}
 
 	/**
-	 * Additionne une matrice à cette matrice, élément-à-élement
+	 * Additionne une matrice ï¿½ cette matrice, ï¿½lï¿½ment-ï¿½-ï¿½lement
 	 * 
 	 * @param b
-	 *            Matrice à additionner
+	 *            Matrice ï¿½ additionner
 	 * @return this
 	 */
 	public Matrix add(Matrix b) {
@@ -132,9 +132,9 @@ public class Matrix {
 	 * Ajoute un vecteur le long d'un axe
 	 * 
 	 * @param v
-	 *            vecteur à ajouter
+	 *            vecteur ï¿½ ajouter
 	 * @param axis
-	 *            axe utilisé pour la somme
+	 *            axe utilisï¿½ pour la somme
 	 * @return this
 	 */
 	public Matrix add(Vector v, int axis) {
@@ -166,8 +166,8 @@ public class Matrix {
 	 * Effectue argmax le long d'un axe
 	 * 
 	 * @param axis
-	 *            axe à utiliser
-	 * @return vecteur contenant les résultats
+	 *            axe ï¿½ utiliser
+	 * @return vecteur contenant les rï¿½sultats
 	 */
 	public Vector argmax(int axis) {
 		if (axis == Matrix.AXIS_HEIGHT) {
@@ -191,7 +191,7 @@ public class Matrix {
 	 * Effectue le produit scalaire entre une matrice et un vecteur
 	 * 
 	 * @param v
-	 *            le vecteur à multiplier
+	 *            le vecteur ï¿½ multiplier
 	 * @return this . v
 	 */
 	public Vector dot(Vector v) {
@@ -216,7 +216,7 @@ public class Matrix {
 	}
 
 	/**
-	 * Vérifie si cette matrice est égal à une autre matrice avec une précision
+	 * Vï¿½rifie si cette matrice est ï¿½gal ï¿½ une autre matrice avec une prï¿½cision
 	 * 1e-10
 	 */
 	@Override
@@ -243,7 +243,7 @@ public class Matrix {
 	 * Remplie cette matrice avec un scalaire
 	 * 
 	 * @param value
-	 *            scalaire utilisé pour remplir
+	 *            scalaire utilisï¿½ pour remplir
 	 * @return this
 	 */
 	public Matrix fill(double value) {
@@ -256,7 +256,7 @@ public class Matrix {
 	}
 
 	/**
-	 * Permet de récuperer une colonne de la matrice sous la forme d'un vecteur
+	 * Permet de rï¿½cuperer une colonne de la matrice sous la forme d'un vecteur
 	 * 
 	 * @param i
 	 *            indice de la colonne
@@ -273,7 +273,7 @@ public class Matrix {
 	}
 
 	/**
-	 * Permet de récuperer une ligne de la matrice sous la forme d'un vecteur
+	 * Permet de rï¿½cuperer une ligne de la matrice sous la forme d'un vecteur
 	 * 
 	 * @param j
 	 *            l'indice de la ligne
@@ -290,12 +290,12 @@ public class Matrix {
 	}
 
 	/**
-	 * Effectue une multiplication élément-à-élement de de la matrice actuelle avec
+	 * Effectue une multiplication ï¿½lï¿½ment-ï¿½-ï¿½lement de de la matrice actuelle avec
 	 * la nouvelle matrice La multiplication se fait en-place, une nouvelle matrice
-	 * n'est donc pas allouée
+	 * n'est donc pas allouï¿½e
 	 * 
 	 * @param b
-	 *            matrice à multiplier
+	 *            matrice ï¿½ multiplier
 	 * @return this
 	 */
 	public Matrix hadamart(Matrix b) {
@@ -312,12 +312,12 @@ public class Matrix {
 	}
 
 	/**
-	 * Effectue une multiplication élément-à-élement de deux matrices
+	 * Effectue une multiplication ï¿½lï¿½ment-ï¿½-ï¿½lement de deux matrices
 	 * 
 	 * @param a
-	 *            Première matrice à multiplier
+	 *            Premiï¿½re matrice ï¿½ multiplier
 	 * @param b
-	 *            Deuxième matrice à multiplier
+	 *            Deuxiï¿½me matrice ï¿½ multiplier
 	 * @return nouvelle matrice contenant le produit
 	 */
 	public static Matrix hadamart(Matrix a, Matrix b) {
@@ -336,7 +336,7 @@ public class Matrix {
 	}
 
 	/**
-	 * Crée la matrice identité
+	 * Crï¿½e la matrice identitï¿½
 	 * 
 	 * @param size
 	 *            taille de la matrice
@@ -351,7 +351,7 @@ public class Matrix {
 	}
 
 	/**
-	 * Renvoie la norme L2 de cette matrice, définie par sqrt(somme(x_ij*x_ij))
+	 * Renvoie la norme L2 de cette matrice, dï¿½finie par sqrt(somme(x_ij*x_ij))
 	 */
 	public double l2norm() {
 		double n = 0;
@@ -399,7 +399,7 @@ public class Matrix {
 	 * Multiplie cette matrice par la matrice b
 	 * 
 	 * @param b
-	 *            la matrice à multiplier
+	 *            la matrice ï¿½ multiplier
 	 * @return this * b
 	 */
 	public Matrix mult(Matrix b) {
@@ -429,7 +429,7 @@ public class Matrix {
 	 * Idem que mult, mais utilisant le maximum de processeurs disponibles
 	 * 
 	 * @param b
-	 *            la matrice à multiplier
+	 *            la matrice ï¿½ multiplier
 	 * @return this * b
 	 */
 	public Matrix parralel_mult(Matrix b) {
@@ -485,7 +485,7 @@ public class Matrix {
 	}
 
 	/**
-	 * Affiche les valeurs de cette matrice, avec une précision de 3 chiffres
+	 * Affiche les valeurs de cette matrice, avec une prï¿½cision de 3 chiffres
 	 */
 	public void print_values() {
 		for (int i = 0; i < height; i++) {
@@ -498,10 +498,10 @@ public class Matrix {
 	}
 
 	/**
-	 * Multiplie tout les élements de cette matrice par un scalaire
+	 * Multiplie tout les ï¿½lements de cette matrice par un scalaire
 	 * 
 	 * @param value
-	 *            scalaire à multiplier
+	 *            scalaire ï¿½ multiplier
 	 * @return this
 	 */
 	public Matrix scale(double scalar) {
@@ -517,9 +517,9 @@ public class Matrix {
 	 * Multiplie un vecteur le long d'un axe
 	 * 
 	 * @param v
-	 *            vecteur à utiliser
+	 *            vecteur ï¿½ utiliser
 	 * @param axis
-	 *            axe à utiliser
+	 *            axe ï¿½ utiliser
 	 * @return this
 	 */
 	public Matrix scale(Vector v, int axis) {
@@ -548,13 +548,13 @@ public class Matrix {
 	}
 
 	/**
-	 * Multiplie tout les élements d'une matrice par un scalaire
+	 * Multiplie tout les ï¿½lements d'une matrice par un scalaire
 	 * 
 	 * @param value
-	 *            scalaire utilisé
+	 *            scalaire utilisï¿½
 	 * @param m
-	 *            Matrice à multiplier
-	 * @return nouvelle matrice contenant le résultat
+	 *            Matrice ï¿½ multiplier
+	 * @return nouvelle matrice contenant le rï¿½sultat
 	 */
 	public static Matrix scale(Matrix m, double scalar) {
 		Matrix res = new Matrix(m.width, m.height);
@@ -574,7 +574,7 @@ public class Matrix {
 	 * @param i
 	 *            indice de la colonne
 	 * @param v
-	 *            vecteur à utiliser
+	 *            vecteur ï¿½ utiliser
 	 * @return this
 	 */
 	public Matrix set_column(int i, Vector v) {
@@ -596,7 +596,7 @@ public class Matrix {
 	 * @param j
 	 *            indice de la ligne
 	 * @param v
-	 *            vecteur à utiliser
+	 *            vecteur ï¿½ utiliser
 	 * @return this
 	 */
 	public Matrix set_row(int j, Vector v) {
@@ -639,8 +639,8 @@ public class Matrix {
 	 * Effectue la somme de cette matrice le long d'un axe
 	 * 
 	 * @param axis
-	 *            axe à utiliser
-	 * @return vecteur contenant les résultats de chaque somme
+	 *            axe ï¿½ utiliser
+	 * @return vecteur contenant les rï¿½sultats de chaque somme
 	 */
 	public Vector sum(int axis) {
 		if (axis == AXIS_HEIGHT) {
@@ -670,29 +670,29 @@ public class Matrix {
 	}
 
 	/**
-	 * Renvoie la transposée de la matrice
+	 * Renvoie la transposï¿½e de la matrice
 	 * 
-	 * @return transposée de la matrice
+	 * @return transposï¿½e de la matrice
 	 */
 	public Matrix T() {
 		return Matrix.transpose(this);
 	}
 
 	/**
-	 * Renvoie la transposée de la matrice
+	 * Renvoie la transposï¿½e de la matrice
 	 * 
-	 * @return transposée de la matrice
+	 * @return transposï¿½e de la matrice
 	 */
 	public Matrix transpose() {
 		return Matrix.transpose(this);
 	}
 
 	/**
-	 * Renvoie la transposée d'une matrice m
+	 * Renvoie la transposï¿½e d'une matrice m
 	 * 
 	 * @param m
-	 *            Matrice à transposer
-	 * @return transposée de la matrice
+	 *            Matrice ï¿½ transposer
+	 * @return transposï¿½e de la matrice
 	 */
 	public static Matrix transpose(Matrix m) {
 		Matrix res = new Matrix(m.height, m.width);
@@ -715,11 +715,11 @@ public class Matrix {
 
 	/**
 	 * Permet de visualiser cette matrice sous la forme d'une image, en supposant
-	 * que chaque élément en hauteur est un filtre, et en mettant ces filtres les
-	 * uns à côté des autres.
+	 * que chaque ï¿½lï¿½ment en hauteur est un filtre, et en mettant ces filtres les
+	 * uns ï¿½ cï¿½tï¿½ des autres.
 	 * 
 	 * @param name
-	 *            nom du fichier à utiliser pour l'écriture
+	 *            nom du fichier ï¿½ utiliser pour l'ï¿½criture
 	 * @param dimension
 	 *            dimension de l'image (souvent 28)
 	 * @param f_w
@@ -727,12 +727,12 @@ public class Matrix {
 	 * @param f_h
 	 *            nombre de filtres en hauteur
 	 * @param write
-	 *            écrit ou non l'image générée
+	 *            ï¿½crit ou non l'image gï¿½nï¿½rï¿½e
 	 * @param black_and_white 
 	 * 			  genere l'image and utilisant rouge et bleu ou noir et blanc
-	 * @return l'image générée par la fonction
+	 * @return l'image gï¿½nï¿½rï¿½e par la fonction
 	 */
-	public BufferedImage visualize(String name, int dimension, int f_w, int f_h, boolean write, boolean black_and_white) {
+	public BufferedImage visualize(String name, int dimension, int f_w, int f_h, boolean write, boolean black_and_white, boolean is_rgb) {
 		if (f_w * f_h != height) {
 			throw new RuntimeException("Dimensions don't match height " + f_w * f_h + " != " + height);
 		}
@@ -748,25 +748,33 @@ public class Matrix {
 					for (int k = 0; k < dimension * scale; k++) {
 						int indice = dimension * (j / scale) + k / scale;
 						int rgb;
-						if(!black_and_white) {
-							int v = (int) (512 * (this.v[im_indice][indice] - min) / (max - min));
-							v -= 256;
-							int a = 0, b = 0;
-							if (v < 0)
-								a = -v;
-							else
-								b = v;
-	
-							a *= 1.5;
-							b *= 1.5;
-							if (a > 255)
-								a = 255;
-							if (b > 255)
-								b = 255;
-							rgb = (0xFF << 24) + (0 << 8) + (a << 16) + b;
+						if(!is_rgb) {
+							if(!black_and_white) {
+								int v = (int) (512 * (this.v[im_indice][indice] - min) / (max - min));
+								v -= 256;
+								int a = 0, b = 0;
+								if (v < 0)
+									a = -v;
+								else
+									b = v;
+		
+								a *= 1.5;
+								b *= 1.5;
+								if (a > 255)
+									a = 255;
+								if (b > 255)
+									b = 255;
+								rgb = (0xFF << 24) + (0 << 8) + (a << 16) + b;
+							} else {
+								int v = (int) (255 * (this.v[im_indice][indice] - min) / (max - min));
+								rgb = (0xFF << 24) + (v << 8) + (v << 16) + v;
+							}
 						} else {
-							int v = (int) (255 * (this.v[im_indice][indice] - min) / (max - min));
-							rgb = (0xFF << 24) + (v << 8) + (v << 16) + v;
+							int r, g, b;
+							r = (int) (255 * (this.v[im_indice][indice] - min) / (max - min));
+							g = (int) (255 * (this.v[im_indice][indice+dimension*dimension] - min) / (max - min));
+							b = (int) (255 * (this.v[im_indice][indice+dimension*dimension*2] - min) / (max - min));
+							rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
 						}
 						bf.setRGB(i2 * dimension * scale + k, i * dimension * scale + j, rgb);
 					}
@@ -784,7 +792,7 @@ public class Matrix {
 	}
 
 	/**
-	 * pad une matrice avec des zéros
+	 * pad une matrice avec des zï¿½ros
 	 * 
 	 * @param pad
 	 *            taille du pad

@@ -36,8 +36,8 @@ public class MLPMetrics {
 		Matrix k_wrongest = model.k_wrongest_data(data, refs, 10);
 		Matrix average_classes = model.average_data_by_class(data);
 		
-		k_wrongest.T().visualize(base_path + "_k_wrongest", 28, k_wrongest.width, 1, true, true);
-		average_classes.T().visualize(base_path + "_average_classes", 28, average_classes.width, 1, true, true);
+		k_wrongest.T().visualize(base_path + "_k_wrongest", 28, k_wrongest.width, 1, true, true, false);
+		average_classes.T().visualize(base_path + "_average_classes", 28, average_classes.width, 1, true, true, false);
 		if(confusion_as_csv) {
 			File d = new File(base_path+ "_confusion.csv");
 			if (!d.exists()) {
@@ -77,7 +77,7 @@ public class MLPMetrics {
 			for(int i = 0 ; i < v.length ; i++) {
 				v.v[i] = Math.log(1 + v.v[i]);
 			}
-			v.to_row_matrix().visualize(base_path + "confusion", confusion.width, 1, 1, true, true);
+			v.to_row_matrix().visualize(base_path + "confusion", confusion.width, 1, 1, true, true, false);
 		}
 	}
 	

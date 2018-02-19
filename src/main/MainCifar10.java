@@ -1,12 +1,17 @@
 package main;
 
+import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
-import java.util.Scanner;
+
+import javax.imageio.ImageIO;
 
 import layers.Parameters;
 import layers.flat.DenseLayer;
@@ -14,10 +19,10 @@ import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
-import optimizers.RMSOptimizer;
+import optimizers.SGDOptimizer;
 import perceptron.FlatSequential;
 
-public class MainMiniProjet {
+public class MainCifar10 {
 	// Mod�le � utiliser
 		public static FlatSequential model;
 
@@ -25,23 +30,19 @@ public class MainMiniProjet {
 		public final static int EPOCHMAX = 10;
 
 		// Nombre de donn�es d'entrainements
-		public static final int N = 35000;
+		public static final int N = 25000;
 
 		// Nombre de donn�es de validation
 		public static final int V = 5000;
-		
-
-		// Nombre de donn�es de validation
-		public static final int real_V = 10000;
 
 		// Nombre de donn�es de test
-		public static int T = 10000;
+		public static int T = 1;
 
 		public static int out_size = 10;
-		public static int feat_size = 256;
+		public static int feat_size = 3072;
 
 		// Matrices de donn�es
-		public static Matrix train_data, test_data, validation_data, real_validation_data;
+		public static Matrix train_data, test_data, validation_data;
 		
 		// Tableaus de labels
 		public static Matrix train_refs, validation_refs;
@@ -53,49 +54,81 @@ public class MainMiniProjet {
 			Vector label_one_hot;
 		}
 
-		static Scanner trainF;
-		static Scanner trainFlabel;
+		static FileInputStream trainF, testF;
 		
 		public static VLabel nextTrain() {
 			if(trainF == null) {
 				try {
-					trainF = new Scanner(new File("cifar10_mp/cifar10_train.data"));
-					trainFlabel = new Scanner(new File("cifar10_mp/cifar10_train.solution"));
+					File f =new File("cifar-10-batches-bin/data_batch_all.bin");
+					//System.out.println(f.getAbsolutePath());
+					trainF = new FileInputStream(f);
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
 				}
 			}
 			
 			VLabel vl = new VLabel();
-			String[] line = trainF.nextLine().split(" ");
-			String[] line2 = trainFlabel.nextLine().split(" ");
-			vl.data = new Vector(feat_size);
-			vl.label_one_hot = new Vector(out_size);
-			int i = 0;
-			for(String s : line) {
-				vl.data.v[i++] = Double.parseDouble(s);
+			byte[] line = new byte[3073];
+			int read = 0;
+			try {
+				read = trainF.read(line);
+				//System.out.println(line[0]+" "+(line[1]&0xFF)+" "+(double)((line[1]&0xFF))/256.);
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			i = 0;
-			for(String s : line2) {
-				vl.label_one_hot.v[i++] = Double.parseDouble(s);
+			if(read < 3073) {
+				System.err.println("ERROR READING DATASET.. EXITING");
+				System.exit(0);
+			}
+			
+			vl.data = new Vector(feat_size);
+			vl.label_one_hot = Vector.one_hot(out_size, line[0]);
+			for(int i = 0;i<feat_size;i++) {
+				vl.data.v[i] = (double)((line[i+1]&0xFF))/256.;
+			}
+			return vl;
+		}
+		
+		public static VLabel nextTest() {
+			if(testF == null) {
+				try {
+					testF = new FileInputStream(new File("cifar-10-batches-bin/test_batch.bin"));
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			VLabel vl = new VLabel();
+			byte[] line = new byte[3073];
+			int read = 0;
+			try {
+				read = testF.read(line);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			if(read < 3073) {
+				System.err.println("ERROR READING TEST DATASET.. EXITING");
+				System.exit(0);
+			}
+			
+			vl.data = new Vector(feat_size);
+			vl.label_one_hot = Vector.one_hot(out_size, line[0]);
+			for(int i = 0;i<feat_size;i++) {
+				vl.data.v[i] = (double)((line[i+1]&0xFF))/256.;
 			}
 			return vl;
 		}
 		
 		
 		public static void write_prediction() {
-			Matrix real_validation_refs = model.forward(real_validation_data, false);
 			Matrix test_refs = model.forward(test_data, false);
 			Matrix train_pre_refs = model.forward(train_data, false);
-			Vector predicted_real_validation = real_validation_refs.argmax(Matrix.AXIS_HEIGHT);
 			Vector predicted_test = test_refs.argmax(Matrix.AXIS_HEIGHT);
 			Vector predicted_train = train_pre_refs.argmax(Matrix.AXIS_HEIGHT);
 			
-
-			
 			PrintWriter out_train = null;
 			try {
-				out_train = new PrintWriter(new File("cifar10_mp/cifar10_train.predict"));
+				out_train = new PrintWriter(new File("cifar-10-batches-bin/cifar10_train.predict"));
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -114,29 +147,9 @@ public class MainMiniProjet {
 			}
 			out_train.close();
 			
-			PrintWriter out_validation = null;
-			try {
-				out_validation = new PrintWriter(new File("cifar10_mp/cifar10_valid.predict"));
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			}
-			for(int i = 0 ; i < real_V ; i++) {
-				
-				StringBuilder sb = new StringBuilder();
-				for(int k = 0 ; k < out_size ; k++) {
-					if(k == predicted_real_validation.v[i]) {
-						sb.append("1 ");
-					} else {
-						sb.append("0 ");
-					}
-				}
-				out_validation.println(sb.toString());
-			}
-			out_validation.close();
-			
 			PrintWriter out_test = null;
 			try {
-				out_test = new PrintWriter(new File("cifar10_mp/cifar10_test.predict"));
+				out_test = new PrintWriter(new File("cifar-10-batches-bin/cifar10_test.predict"));
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -191,44 +204,45 @@ public class MainMiniProjet {
 			}
 			sigmas.scale(1. / (N+V)).power(0.5);
 			
+			for(int i = 0 ; i < sigmas.length ; i++) {
+				if(sigmas.v[i] == 0) {
+					sigmas.v[i] = 1;
+				}
+			}
+			
 			System.out.println("means "+means);
 			System.out.println("sigmas"+sigmas);
 
 			System.out.println("# Train/Validation set built with " + train_data.width + "/" + validation_data.width + " images");
-			Scanner testF=null, valF=null;
-			try {
-				testF = new Scanner(new File("cifar10_mp/cifar10_test.data"));
-				valF  = new Scanner(new File("cifar10_mp/cifar10_valid.data"));
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			}
+			
 			test_data = new Matrix(T, feat_size);
-			real_validation_data = new Matrix(real_V, feat_size);
 			
 			for(int d_c = 0 ; d_c < T ; d_c++) {
-				String[] line = testF.nextLine().split(" ");	
-				double[] d = new double[feat_size];
-				int i = 0;
-				for(String s : line) {
-					d[i++] = Double.parseDouble(s);
-				}
-				test_data.set_column(d_c, new Vector(d));
+				test_data.set_column(d_c, nextTest().data);
 			}
-			for(int d_c = 0 ; d_c < real_V ; d_c++) {
-				String[] line = valF.nextLine().split(" ");	
-				double[] d = new double[feat_size];
-				int i = 0;
-				for(String s : line) {
-					d[i++] = Double.parseDouble(s);
+			BufferedImage bf = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+
+			//System.out.println(train_data.v[0].length);
+			for(int x = 0 ; x < 32 ; x++) {
+				for(int y = 0 ; y < 32 ; y++) {
+					Color c = new Color((float)train_data.v[y*32+x][0],  (float)train_data.v[1024+y*32+x][0], (float)train_data.v[2048+y*32+x][0]);
+					//System.out.println(x + " " + y + "   " + c.getRed() +" " + c.getGreen() + " " + c.getBlue()+" "+train_data.v[y*32+x][0]);
+					bf.setRGB(x, y, c.getRGB());
 				}
-				real_validation_data.set_column(d_c, new Vector(d));
 			}
+			try {
+				ImageIO.write(bf, "png", new File("test.png"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
 			means.scale(-1);
 			sigmas.inverse();
 			train_data.add(means, Matrix.AXIS_WIDTH).scale(sigmas, Matrix.AXIS_WIDTH);
 			validation_data.add(means, Matrix.AXIS_WIDTH).scale(sigmas, Matrix.AXIS_WIDTH);
-			real_validation_data.add(means, Matrix.AXIS_WIDTH).scale(sigmas, Matrix.AXIS_WIDTH);
 			test_data.add(means, Matrix.AXIS_WIDTH).scale(sigmas, Matrix.AXIS_WIDTH);
+			
+			
 		}
 
 		public static void main(String[] args) {
@@ -238,19 +252,20 @@ public class MainMiniProjet {
 			RandomGenerator.init(seed);
 			System.out.println("# Seed : " + seed);
 
-			Parameters p = new Parameters("reg=0.00000", "lr=0.001", "lrdecay=0.9");
+			Parameters p = new Parameters("reg=0.00000", "lr=0.1", "lrdecay=0.99");
 			
 			// On cr�e notre mod�le vide avec un mini_batch de 100
-			model = new FlatSequential(64, new RMSOptimizer(p));
+			model = new FlatSequential(64, new SGDOptimizer(p));
 			load_data();
 			
 			
 			// Mod�le classique � 4 couches (entr�e + cach�e + cach�e + sortie) avec 1000/300 neurones interm�diaires et des activations en sigmoide
 			p.set("dout", "false");
-			model.add(new DenseLayer(feat_size, 256, 0.5, "swish", true, p));
+			model.add(new DenseLayer(feat_size, 100, 0.1, "tanh", true, p));
+			//model.add(new DenseLayer(feat_size, out_size, 0, "none", false, p));
 			p.set("dout", "true");
-			model.add(new DenseLayer(256, 256, 0.5, "swish", true, p));
-			model.add(new DenseLayer(256, out_size, 0, "none", false, p));
+			//model.add(new DenseLayer(256, 256, 0.5, "swish", true, p));
+			model.add(new DenseLayer(100, out_size, 0, "none", false, p));
 			// Fonction de co�t entropie crois�e avec softmax
 			model.add(new SoftmaxCrossEntropy());
 			
@@ -272,12 +287,14 @@ public class MainMiniProjet {
 									model.correct_count(validation_data, validation_refs)/(double)V, 
 									model.get_loss(train_data, train_refs));
 	*/
+			((DenseLayer)model.get_layers().get(0)).al.matrices.get("w").visualize("test"+0, 32, 10, 10, true, false, true);
 			System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
 			
 			for (int i = 1; i <= EPOCHMAX; i++) {
 				long t = System.currentTimeMillis();
 				// On lance l'�poque
 				model.train_on_batch(train_data, train_refs);
+				((DenseLayer)model.get_layers().get(0)).al.matrices.get("w").visualize("test"+i, 32, 10, 10, true, false, true);
 
 				// Temps que cela a pris pour effectuer l'�poque
 				double epoch_time = (System.currentTimeMillis() - t) / 1000.;

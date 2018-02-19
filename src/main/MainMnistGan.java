@@ -19,7 +19,7 @@ import perceptron.MLPMetrics;
 import perceptron.FlatSequential;
 
 public class MainMnistGan {
-	// Chemin vers les données
+	// Chemin vers les donnï¿½es
 	static String path = "";
 	static String train_labelDB = path + "train-labels.idx1-ubyte";
 	static String train_imageDB = path + "train-images.idx3-ubyte";
@@ -29,13 +29,13 @@ public class MainMnistGan {
 	// Nombre d'epoque max
 	public final static int EPOCHMAX = 30;
 
-	// Nombre de données d'entrainements
+	// Nombre de donnï¿½es d'entrainements
 	public static final int N = 16000;
 
-	// Matrices de données
+	// Matrices de donnï¿½es
 	public static Matrix train_data;
 	
-	// Seed utilisé pour la reproducibilité
+	// Seed utilisï¿½ pour la reproducibilitï¿½
 	public static long seed = System.currentTimeMillis();
 
 	public static void load_data() {
@@ -68,7 +68,7 @@ public class MainMnistGan {
 	}
 
 	public static void main(String[] args) {
-		// On initialise le générateur aléatoire
+		// On initialise le gï¿½nï¿½rateur alï¿½atoire
 		long time = System.currentTimeMillis();
 		seed = 1510437982659L;
 		RandomGenerator.init(seed);
@@ -79,7 +79,7 @@ public class MainMnistGan {
 		
 		System.out.println("# Processors : " + Runtime.getRuntime().availableProcessors());
 
-		// Permet d'afficher les nombres avec une précision définie à l'avance
+		// Permet d'afficher les nombres avec une prï¿½cision dï¿½finie ï¿½ l'avance
 		DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.getDefault());
 		otherSymbols.setDecimalSeparator('.');
 		otherSymbols.setGroupingSeparator(',');
@@ -102,7 +102,7 @@ public class MainMnistGan {
 				if(k%tenth == 0) {
 					System.out.print("=");
 					System.out.println(l1 + " " + l2);
-					model.test_generator().T().visualize("fig2/test_gan"+(counterlala++), 28, 10, 10, true, true);
+					model.test_generator().T().visualize("fig2/test_gan"+(counterlala++), 28, 10, 10, true, true, false);
 				}
 
 				l1 = model.train_discriminator(32, train_data, k*mini_batch, (k+1)*mini_batch);
@@ -115,7 +115,7 @@ public class MainMnistGan {
 			
 			System.out.println(total_loss);
 
-			// Temps que cela a pris pour effectuer l'époque
+			// Temps que cela a pris pour effectuer l'ï¿½poque
 			double epoch_time = (System.currentTimeMillis() - t) / 1000.;
 
 			t = System.currentTimeMillis(); 
@@ -123,7 +123,7 @@ public class MainMnistGan {
 			System.out.print(i + ((i >= 10) ? " " : "  "));
 			System.out.print("epoch time " + df2.format(epoch_time) + "s ");
 
-			// Temps avant la fin de l'entraînement
+			// Temps avant la fin de l'entraï¿½nement
 			System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
 		}
 	}
