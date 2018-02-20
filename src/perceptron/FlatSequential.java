@@ -44,7 +44,7 @@ public class FlatSequential extends FeedForwardNetwork {
 	}
 	
 	/**
-	 * @param batch_size Taille du batch à utiliser
+	 * @param batch_size Taille du batch ï¿½ utiliser
 	 */
 	public FlatSequential(int batch_size, Optimizer opt) {
 		layers = new ArrayList<FlatLayer>();
@@ -58,20 +58,26 @@ public class FlatSequential extends FeedForwardNetwork {
 	}
 
 	/**
-	 * Passe un ensemble de donnée à travers le réseau, sans modifier l'ensemble de départ
+	 * Passe un ensemble de donnï¿½e ï¿½ travers le rï¿½seau, sans modifier l'ensemble de dï¿½part
 	 */
 	@Override
 	public Matrix forward(Matrix data, boolean train) {
-		Matrix next = new Matrix(data);
+		Matrix next = null;
+		int i = 0;
 		for (FlatLayer l : layers) {
-			next = l.forward(next, train);
+			if(i == 0) {
+				next = l.forward(data, train);
+			} else {
+				next = l.forward(next, train);
+			}
+			i++;
 		}
 		return next;
 	}
 
 	/**
-	 * Calcule les dérivées partielles couches à couches, en appliquant le gradient à chaque fois.
-	 * Nécessite d'avoir fait une passe de forward_train avant.
+	 * Calcule les dï¿½rivï¿½es partielles couches ï¿½ couches, en appliquant le gradient ï¿½ chaque fois.
+	 * Nï¿½cessite d'avoir fait une passe de forward_train avant.
 	 * @return 
 	 */
 	public Matrix backward(Matrix dout, boolean train) {
@@ -85,26 +91,24 @@ public class FlatSequential extends FeedForwardNetwork {
 	}
 
 	/**
-	 * Effectue une epoch sur des données et des références
-	 * @param data données à apprendre
-	 * @param refs labels représentant la vérité
+	 * Effectue une epoch sur des donnï¿½es et des rï¿½fï¿½rences
+	 * @param data donnï¿½es ï¿½ apprendre
+	 * @param refs labels reprï¿½sentant la vï¿½ritï¿½
 	 */
 	public void train_on_batch(Matrix data, Matrix refs) {
 		
 		if(data.width % mini_batch != 0) {
-			System.err.println("Le nombre de données ne sont pas divisble par mini_batch, "+(data.width%mini_batch)+" données seront ignorées.");
+			System.err.println("Le nombre de donnï¿½es ne sont pas divisble par mini_batch, "+(data.width%mini_batch)+" donnï¿½es seront ignorï¿½es.");
 		}
 		
 		last_average_loss = 0;
 		last_correct_count = 0;
 		
-		// On mélange les données, en mélangeant une liste d'indice
+		// On mï¿½lange les donnï¿½es, en mï¿½langeant une liste d'indice
 		ArrayList<Integer> ints = new ArrayList<Integer>();
-		ArrayList<Vector> columns = new ArrayList<Vector>();
 
 		for (int i = 0; i < data.width; i++) {
 			ints.add(i);
-			columns.add(data.get_column(i));
 		}
 		Collections.shuffle(ints, RandomGenerator.r);
 
@@ -113,7 +117,7 @@ public class FlatSequential extends FeedForwardNetwork {
 
 		
 		for (int i = 0; i < data.width / mini_batch; i++) {
-			// Mini batch à utiliser
+			// Mini batch ï¿½ utiliser
 			Matrix batch = new Matrix(mini_batch, data.height);
 			// Labels du mini batch
 			Matrix refs_v = new Matrix(mini_batch, refs.height);
@@ -123,10 +127,10 @@ public class FlatSequential extends FeedForwardNetwork {
 					System.out.print("=");
 			}
 			
-			// On génère le mini batch
+			// On gï¿½nï¿½re le mini batch
 			for (int j = 0; j < mini_batch; j++) {
 				int indice = ints.get(i * mini_batch + j);
-				batch.set_column(j, columns.get(indice));
+				batch.set_column(j, data.get_column(indice));
 				refs_v.set_column(j, refs.get_column(indice));
 			}
 
@@ -138,10 +142,10 @@ public class FlatSequential extends FeedForwardNetwork {
 			
 			Matrix dout = batch;
 			Loss l = get_loss_layer();
-			// On donne les références à la fonction de coût (en transformant les labels en matrice de vérité sous la forme d'une liste de one-hot vector)
+			// On donne les rï¿½fï¿½rences ï¿½ la fonction de coï¿½t (en transformant les labels en matrice de vï¿½ritï¿½ sous la forme d'une liste de one-hot vector)
 			l.feed_ref(refs_v);
 
-			// Propagation arrière
+			// Propagation arriï¿½re
 			backward(dout, true);
 
 			last_average_loss += l.loss;
@@ -162,10 +166,10 @@ public class FlatSequential extends FeedForwardNetwork {
 	
 	/**
 	 * Calcule la matrice de confusion
-	 * @param data données
-	 * @param refs références
-	 * @return en hauteur les prédictions, en largeur la vérité.
-	 * Ainsi confusion.v[0][2] contient le nombre de fois que le réseau a reconnu le 0è label alors que la vérité était le 2è label
+	 * @param data donnï¿½es
+	 * @param refs rï¿½fï¿½rences
+	 * @return en hauteur les prï¿½dictions, en largeur la vï¿½ritï¿½.
+	 * Ainsi confusion.v[0][2] contient le nombre de fois que le rï¿½seau a reconnu le 0ï¿½ label alors que la vï¿½ritï¿½ ï¿½tait le 2ï¿½ label
 	 */
 	public Matrix confusion_matrix(Matrix data, int[] refs) {
 		Matrix end = forward(data, false);
@@ -181,10 +185,10 @@ public class FlatSequential extends FeedForwardNetwork {
 	}
 
 	/**
-	 * Renvoie les données où le réseau était le moins sûr de sa réponse
-	 * @param data données
-	 * @param refs références
-	 * @param k nombre de pire données à renvoyer
+	 * Renvoie les donnï¿½es oï¿½ le rï¿½seau ï¿½tait le moins sï¿½r de sa rï¿½ponse
+	 * @param data donnï¿½es
+	 * @param refs rï¿½fï¿½rences
+	 * @param k nombre de pire donnï¿½es ï¿½ renvoyer
 	 * @return k_max (1 - forward(data)[correct]) 
 	 */
 	public Matrix k_wrongest_data(Matrix data, int[] refs, int k) {
@@ -206,8 +210,8 @@ public class FlatSequential extends FeedForwardNetwork {
 		return wrongest;
 	}
 	/**
-	 * Renvoie la moyenne de chaque donnée en fonction de chaque classe prédite
-	 * @param data données
+	 * Renvoie la moyenne de chaque donnï¿½e en fonction de chaque classe prï¿½dite
+	 * @param data donnï¿½es
 	 * 
 	 */
 	public Matrix average_data_by_class(Matrix data) {
@@ -227,7 +231,7 @@ public class FlatSequential extends FeedForwardNetwork {
 	}
 
 	/**
-	 * Compte le nombre de données classifiées correctement
+	 * Compte le nombre de donnï¿½es classifiï¿½es correctement
 	 */
 	public int correct_count(Matrix data, Matrix refs) {
 		Matrix end = forward(data, false);
