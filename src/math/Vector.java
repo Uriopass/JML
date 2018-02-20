@@ -350,4 +350,12 @@ public class Vector {
 		sb.append(')');
 		return sb.toString();
 	}
+
+	public int[] to_int_array() {
+		int[] d = new int[this.length];
+		for(int i = 0 ; i < this.length ; i++) {
+			d[i] = (int)Math.round(v[i]);
+		}
+		return d;
+	}
 }

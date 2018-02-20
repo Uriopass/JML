@@ -16,6 +16,7 @@ import math.RandomGenerator;
 import math.Vector;
 import optimizers.RMSOptimizer;
 import perceptron.FlatSequential;
+import perceptron.MLPMetrics;
 
 public class MainMiniProjet {
 	// Modèle à utiliser
@@ -303,13 +304,20 @@ public class MainMiniProjet {
 				System.out.print("validation time " + df2.format(validation_forward_t) + "s");
 				System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
 			}
-			write_prediction();
-	/*
-			metrics.measure_and_write("./out_cal101/train", model, train_data, train_refs, false);
-			metrics.measure_and_write("./out_cal101/test", model, test_data, test_refs, false);
-			metrics.write_time_series_csv("./out_cal101/accuracy.csv");
-
-	*/
+			Matrix confusion = model.confusion_matrix(train_data, train_refs.argmax(Matrix.AXIS_HEIGHT).to_int_array());
+			Vector v = new Vector(confusion.v[0]);
+			for (int i = 1; i < confusion.width; i++) {
+				v.append(new Vector(confusion.v[i]));
+			}
+			for(int i = 0 ; i < v.length ; i++) {
+				v.v[i] = Math.log(1 + v.v[i]);
+			}
+			v.to_row_matrix().visualize("confusion", confusion.width, 1, 1, true, false);
+			v.to_row_matrix().visualize("confusion2", confusion.width, 1, 1, true, true);
+	//		write_prediction();
+	
+			
+	
 			//System.out.println("Value at final test  : "+df2.format((100. * model.correct_count(test_data, test_refs)) / T)+"%");
 		}
 }

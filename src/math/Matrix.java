@@ -737,7 +737,7 @@ public class Matrix {
 			throw new RuntimeException("Dimensions don't match height " + f_w * f_h + " != " + height);
 		}
 		BufferedImage bf;
-		final int scale = 4;
+		final int scale = 16;
 		bf = new BufferedImage(dimension * scale * f_w, dimension * scale * f_h, BufferedImage.TYPE_INT_ARGB);
 		for (int i = 0; i < f_h; i++) {
 			for (int i2 = 0; i2 < f_w; i2++) {
@@ -763,7 +763,7 @@ public class Matrix {
 								a = 255;
 							if (b > 255)
 								b = 255;
-							rgb = (0xFF << 24) + (0 << 8) + (a << 16) + b;
+							rgb = (0xFF << 24) + (0 << 8) + (b << 16) + a;
 						} else {
 							int v = (int) (255 * (this.v[im_indice][indice] - min) / (max - min));
 							rgb = (0xFF << 24) + (v << 8) + (v << 16) + v;
