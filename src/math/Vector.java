@@ -358,4 +358,25 @@ public class Vector {
 		}
 		return d;
 	}
+
+	public static Vector random_gaussian_vector(int nb_params) {
+		Vector v = new Vector(nb_params);
+		for(int i = 0 ; i < nb_params ; i++) {
+			v.v[i] = RandomGenerator.gaussian(1);
+		}
+		return v;
+	}
+
+	public Vector set_len(double len) {
+		double norm = this.norm();
+		return scale(len/norm);
+	}
+
+	private double norm() {
+		double s = 0;
+		for(int i = 0 ; i < length ; i++) {
+			s += v[i]*v[i];
+		}
+		return Math.sqrt(s);
+	}
 }

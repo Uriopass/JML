@@ -353,7 +353,7 @@ public class Matrix {
 	/**
 	 * Renvoie la norme L2 de cette matrice, dï¿½finie par sqrt(somme(x_ij*x_ij))
 	 */
-	public double l2norm() {
+	public double norm() {
 		double n = 0;
 		for (double[] b : v) {
 			for (double c : b) {
@@ -361,6 +361,19 @@ public class Matrix {
 			}
 		}
 		return Math.sqrt(n);
+	}
+	
+	/**
+	 * Renvoie la norme L2 de cette matrice au carré, dï¿½finie par somme(x_ij*x_ij)
+	 */
+	public double norm2() {
+		double n = 0;
+		for (double[] b : v) {
+			for (double c : b) {
+				n += c * c;
+			}
+		}
+		return n;
 	}
 
 	/**

@@ -3,6 +3,8 @@ package optimizers;
 import layers.Parameters;
 import layers.TrainableMatrices;
 import layers.TrainableVectors;
+import math.TrainableMatrix;
+import math.TrainableVector;
 
 public abstract class Optimizer {
 	Parameters p;
@@ -15,4 +17,7 @@ public abstract class Optimizer {
 	public abstract void optimize();
 
 	public abstract void end_of_epoch();
+
+	public abstract Iterable<TrainableMatrix> get_mats();
+	public abstract Iterable<TrainableVector> get_vecs();
 }

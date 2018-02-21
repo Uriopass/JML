@@ -37,6 +37,16 @@ public class SGDOptimizer extends Optimizer {
 	}
 	
 	@Override
+	public Iterable<TrainableMatrix> get_mats() {
+		return mats;
+	}
+	
+	@Override
+	public Iterable<TrainableVector> get_vecs() {
+		return vec;
+	}
+	
+	@Override
 	public void optimize() {
 		for(TrainableMatrix m : mats) {
 			Matrix m_grad = m.grad;

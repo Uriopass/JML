@@ -9,14 +9,16 @@ import java.util.Locale;
 import java.util.Scanner;
 
 import layers.Parameters;
-import layers.flat.DenseLayer;
+import layers.activations.ReLUActivation;
+import layers.flat.AffineLayer;
+import layers.flat.BatchnormLayer;
+import layers.flat.DropoutLayer;
 import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
 import optimizers.RMSOptimizer;
 import perceptron.FlatSequential;
-import perceptron.MLPMetrics;
 
 public class MainMiniProjet {
 	// Mod�le � utiliser
@@ -231,7 +233,7 @@ public class MainMiniProjet {
 			real_validation_data.add(means, Matrix.AXIS_WIDTH).scale(sigmas, Matrix.AXIS_WIDTH);
 			test_data.add(means, Matrix.AXIS_WIDTH).scale(sigmas, Matrix.AXIS_WIDTH);
 		}
-
+		
 		public static void main(String[] args) {
 			// seed = 1510445586196L;
 			// On initialise le g�n�rateur al�atoire
@@ -242,18 +244,26 @@ public class MainMiniProjet {
 			Parameters p = new Parameters("reg=0.00000", "lr=0.001", "lrdecay=0.9");
 			
 			// On cr�e notre mod�le vide avec un mini_batch de 100
-			model = new FlatSequential(64, new RMSOptimizer(p));
+			RMSOptimizer opt = new RMSOptimizer(p);
+			model = new FlatSequential(64, opt);
 			load_data();
 			
 			
 			// Mod�le classique � 4 couches (entr�e + cach�e + cach�e + sortie) avec 1000/300 neurones interm�diaires et des activations en sigmoide
 			p.set("dout", "false");
-			model.add(new DenseLayer(feat_size, 256, 0.5, "swish", true, p));
+			model.add(new AffineLayer(feat_size, 256, true, p));
 			p.set("dout", "true");
-			model.add(new DenseLayer(256, 256, 0.5, "swish", true, p));
-			model.add(new DenseLayer(256, out_size, 0, "none", false, p));
+			//model.add(new BatchnormLayer(256, p));
+			model.add(new ReLUActivation());
+			model.add(new DropoutLayer(0.5));
+			model.add(new AffineLayer(256, 256, true, p));
+			//model.add(new BatchnormLayer(256, p));
+			model.add(new ReLUActivation());
+			model.add(new DropoutLayer(0.5));
+			model.add(new AffineLayer(256, 10, true, p));
 			// Fonction de co�t entropie crois�e avec softmax
 			model.add(new SoftmaxCrossEntropy());
+			
 			
 			System.out.println("# Model created with following architecture : ");
 			model.print_architecture();
@@ -283,14 +293,17 @@ public class MainMiniProjet {
 				// Temps que cela a pris pour effectuer l'�poque
 				double epoch_time = (System.currentTimeMillis() - t) / 1000.;
 				
+				
 				t = System.currentTimeMillis();
-				double validation_accuracy = (100. * model.correct_count(validation_data, validation_refs)) / V;
+				double validation_accuracy = (100. * model.correct_count(train_data, train_refs)) / T;
+				
+				
 				
 				// Temps que cela a pris de regarder le nombre de donn�es de test correct
 				double validation_forward_t = (System.currentTimeMillis() - t) / 1000.;
 				
 				double train_accuracy = (100. * model.last_correct_count) / train_data.width;
-
+				
 				//metrics.add_time_series(train_accuracy, validation_accuracy, model.last_average_loss);
 				
 				// Exemple d'affichage : 
@@ -304,6 +317,7 @@ public class MainMiniProjet {
 				System.out.print("validation time " + df2.format(validation_forward_t) + "s");
 				System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
 			}
+			//draw_loss(opt);
 			Matrix confusion = model.confusion_matrix(train_data, train_refs.argmax(Matrix.AXIS_HEIGHT).to_int_array());
 			Vector v = new Vector(confusion.v[0]);
 			for (int i = 1; i < confusion.width; i++) {

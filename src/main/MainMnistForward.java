@@ -9,16 +9,18 @@ import java.util.Locale;
 import datareaders.MnistReader;
 import image.ImageConverter;
 import layers.Parameters;
-import layers.activations.TanhActivation;
+import layers.activations.ReLUActivation;
+import layers.flat.AffineLayer;
 import layers.flat.AffineResidualLayer;
 import layers.flat.BatchnormLayer;
 import layers.flat.DenseLayer;
 import layers.losses.SoftmaxCrossEntropy;
-import layers.reccurent.SimpleRecManyToOne;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
+import optimizers.Optimizer;
 import optimizers.RMSOptimizer;
+import optimizers.SGDOptimizer;
 import perceptron.FlatSequential;
 import perceptron.MLPMetrics;
 
@@ -35,10 +37,10 @@ public class MainMnistForward {
 	public static FlatSequential model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 20;
+	public final static int EPOCHMAX = 7;
 
 	// Nombre de données d'entrainements
-	public static final int N = 20000;
+	public static final int N = 30000;
 	// Nombre de données de validation
 	public static final int V = 10000;
 
@@ -118,6 +120,77 @@ public class MainMnistForward {
 		System.out.println("# Test set built with " + T + " images");
 	}
 
+
+	public static void draw_loss(Optimizer opt) {
+		int nb_params = 0;
+		double norm = 0;
+		
+		for(Matrix m : opt.get_mats()) {
+			nb_params += m.width*m.height;
+			norm += m.norm2();
+		}
+		for(Vector v : opt.get_vecs()) {
+			nb_params += v.length;
+			norm += Vector.scale(v, v).sum();
+		}
+		System.out.println("# "+nb_params +" parameters with norm "+Math.sqrt(norm));
+
+		Vector params = new Vector(nb_params);
+		int counter = 0;
+		for(Matrix m : opt.get_mats()) {
+			for(int i = 0 ; i < m.height ; i++) {
+				for(int j = 0 ; j < m.width ; j++) {
+					params.v[counter++] = m.v[i][j];
+				}
+			}
+		}
+		for(Vector v : opt.get_vecs()) {
+			for(int i = 0 ; i < v.length; i++) {
+				params.v[counter++] = v.v[i];
+			}
+		}
+		
+		
+		Vector axe1 = Vector.random_gaussian_vector(nb_params).set_len(Math.sqrt(norm));
+		Vector axe2 = Vector.random_gaussian_vector(nb_params).set_len(Math.sqrt(norm));
+		
+		int size = 12;
+		double[][] losses = new double[size+1][size+1];
+		for(int u = 0 ; u <= size ; u++) {
+			for(int v = 0 ; v <= size ; v++) {
+				double inter1 = ((2.0*u)/size)-1.0;
+				double inter2 = ((2.0*v)/size)-1.0;
+				Vector newP = new Vector(params);
+				for(int k = 0 ; k < nb_params ; k++) {
+					newP.v[k] += axe1.v[k]*inter1 + axe2.v[k]*inter2; 
+				}
+				counter = 0;
+				for(Matrix m : opt.get_mats()) {
+					for(int i = 0 ; i < m.height ; i++) {
+						for(int j = 0 ; j < m.width ; j++) {
+							m.v[i][j] = newP.v[counter++];
+						}
+					}
+				}
+				for(Vector v2 : opt.get_vecs()) {
+					for(int i = 0 ; i < v2.length; i++) {
+						v2.v[i] = newP.v[counter++];
+					}
+				}
+				
+				double loss = model.get_loss(train_data, train_refs);
+				losses[u][v] = loss;
+				System.out.println("For "+inter1 + " "+inter2+" "+loss);
+			}
+		}
+		for(int i = 0 ; i <= size ; i++) {
+			for(int j = 0 ; j <= size ; j++) {
+				System.out.print(losses[i][j]+";");
+			}
+			System.out.println();
+		}
+	}
+	
 	public static void main(String[] args) {
 		// On initialise le générateur aléatoire
 		long time = System.currentTimeMillis();
@@ -128,29 +201,37 @@ public class MainMnistForward {
 		// Paramètres du modele
 		Parameters p = new Parameters("reg=0.00005", "lr=0.001");
 		// On crée notre modèle vide avec un mini_batch de 40
-		model = new FlatSequential(40, new RMSOptimizer(p));
+		SGDOptimizer opt = new SGDOptimizer(p);
+		model = new FlatSequential(40, opt);
 		load_data();
 
 		// Modèle classique à 4 couches (entrée + cachée + cachée + sortie) avec 1000 et 100 neurones intermédiaires et des activations en sigmoide
 
 		// Dout est inutile pour la première couche
 		p.set("dout", "false");
-		model.add(new DenseLayer(784, 500, 0, "tanh", true, p));
+		model.add(new AffineLayer(784, 128, true, p));
 		p.set("dout", "true");
-		model.add(new AffineResidualLayer(500, false, p));
-		model.add(new BatchnormLayer(500, p));
-		model.add(new TanhActivation());
-		model.add(new AffineResidualLayer(500, false, p));
-		model.add(new BatchnormLayer(500, p));
-		model.add(new TanhActivation());
-		model.add(new DenseLayer(500, 100, 0, "tanh", true, p));
-		model.add(new AffineResidualLayer(100, false, p));
-		model.add(new BatchnormLayer(100, p));
-		model.add(new TanhActivation());
-		model.add(new AffineResidualLayer(100, false, p));
-		model.add(new BatchnormLayer(100, p));
-		model.add(new TanhActivation());
-		model.add(new DenseLayer(100, 10, 0, "none", false, p));
+		model.add(new ReLUActivation());
+		model.add(new AffineLayer(128, 128, true, p));
+		//model.add(new BatchnormLayer(128, p));
+		model.add(new ReLUActivation());
+		model.add(new AffineLayer(128, 128, true, p));
+		//model.add(new BatchnormLayer(128, p));
+		model.add(new ReLUActivation());
+		model.add(new AffineLayer(128, 128, true, p));
+		model.add(new ReLUActivation());
+		model.add(new AffineLayer(128, 128, true, p));
+		model.add(new ReLUActivation());
+		model.add(new AffineLayer(128, 128, true, p));
+		model.add(new ReLUActivation());
+		model.add(new AffineLayer(128, 128, true, p));
+		model.add(new ReLUActivation());
+		model.add(new AffineLayer(128, 128, true, p));
+		model.add(new ReLUActivation());
+		model.add(new AffineLayer(128, 128, true, p));
+		//model.add(new BatchnormLayer(128, p));
+		model.add(new ReLUActivation());
+		model.add(new DenseLayer(128, 10, 0, "none", false, p));
 		// Fonction de coût entropie croisée avec softmax
 		model.add(new SoftmaxCrossEntropy());
 
@@ -207,6 +288,8 @@ public class MainMnistForward {
 			// Temps avant la fin de l'entraînement
 			System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
 		}
+		
+		draw_loss(opt);
 
 		// Ecrit les données intéréssantes, comme la matrice de confusion etc.
 		/*

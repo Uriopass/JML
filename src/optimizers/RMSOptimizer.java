@@ -47,6 +47,14 @@ public class RMSOptimizer extends Optimizer {
 		}
 	}
 	
+	public Iterable<TrainableMatrix> get_mats() {
+		return acc_mats.keySet();
+	}
+	
+	public Iterable<TrainableVector> get_vecs() {
+		return acc_vec.keySet();
+	}
+	
 	@Override
 	public void optimize() {
 		double gamma = p.get_as_double("gamma", 0.9);

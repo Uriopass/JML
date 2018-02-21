@@ -64,7 +64,9 @@ public class FlatSequential extends FeedForwardNetwork {
 	public Matrix forward(Matrix data, boolean train) {
 		Matrix next = null;
 		int i = 0;
+
 		for (FlatLayer l : layers) {
+//			long t = System.currentTimeMillis();
 			if(i == 0) {
 				next = l.forward(data, train);
 			} else {
@@ -157,9 +159,13 @@ public class FlatSequential extends FeedForwardNetwork {
 		System.out.print("] ");
 	}
 
-	public double get_loss(Matrix data, int[] refs) {
+	public double get_loss(Matrix data, int[] refs, int out_size) {
+		return get_loss(data, Loss.from_int_refs(refs, out_size));
+	}
+	
+	public double get_loss(Matrix data, Matrix refs) {
 		Matrix end = forward(data, false);
-		get_loss_layer().feed_ref(Loss.from_int_refs(refs, end.height));
+		get_loss_layer().feed_ref(refs);
 		get_loss_layer().backward(end, false);
 		return get_loss_layer().loss;
 	}
