@@ -305,6 +305,20 @@ public class Vector {
 		}
 		return res;
 	}
+	
+	/**
+	 * Renvoie la différence a-b
+	 */
+	public static Vector sub(Vector a, Vector b) {
+		if(a.length != b.length) {
+			throw new RuntimeException("Incompatible shape : (" + a.length +") and (" + b.length + ")");
+		}
+		Vector c = new Vector(a.length);
+		for(int i = 0 ; i < a.length ; i++) {
+			c.v[i] = a.v[i]-b.v[i];
+		}
+		return c;
+	}
 
 	/**
 	 * Renvoie la somme de ce vecteur

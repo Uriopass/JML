@@ -37,7 +37,7 @@ public class MainMnistForward {
 	public static FlatSequential model;
 
 	// Nombre d'epoque max
-	public final static int EPOCHMAX = 7;
+	public final static int EPOCHMAX = 6;
 
 	// Nombre de données d'entrainements
 	public static final int N = 30000;
@@ -191,6 +191,98 @@ public class MainMnistForward {
 		}
 	}
 	
+	public static void draw_loss_1D(Optimizer m_1, Optimizer m_2) {
+		int nb_params = 0;
+		
+		for(Matrix m : m_1.get_mats()) {
+			nb_params += m.width*m.height;
+		}
+		for(Vector v : m_1.get_vecs()) {
+			nb_params += v.length;
+		}
+		System.out.println("# "+nb_params +" parameters");
+
+		Vector params = new Vector(nb_params);
+		Vector params2 = new Vector(nb_params);
+		
+		int counter = 0;
+		for(Matrix m : m_1.get_mats()) {
+			for(int i = 0 ; i < m.height ; i++) {
+				for(int j = 0 ; j < m.width ; j++) {
+					params.v[counter++] = m.v[i][j];
+				}
+			}
+		}
+		for(Vector v : m_1.get_vecs()) {
+			for(int i = 0 ; i < v.length; i++) {
+				params.v[counter++] = v.v[i];
+			}
+		}
+		counter = 0;
+		
+		for(Matrix m : m_2.get_mats()) {
+			for(int i = 0 ; i < m.height ; i++) {
+				for(int j = 0 ; j < m.width ; j++) {
+					params2.v[counter++] = m.v[i][j];
+				}
+			}
+		}
+		for(Vector v : m_2.get_vecs()) {
+			for(int i = 0 ; i < v.length; i++) {
+				params2.v[counter++] = v.v[i];
+			}
+		}
+		
+		
+		Vector axe = Vector.sub(params2, params);
+		counter=0;
+		for(Matrix m : m_1.get_mats()) {
+			for(int i = 0 ; i < m.height ; i++) {
+				for(int j = 0 ; j < m.width ; j++) {
+					m.v[i][j] = params2.v[counter++];
+				}
+			}
+		}
+		for(Vector v2 : m_1.get_vecs()) {
+			for(int i = 0 ; i < v2.length; i++) {
+				v2.v[i] = params2.v[counter++];
+			}
+		}
+		System.out.println("Loss at model2 ? "+model.get_loss(train_data, train_refs));
+		int size = 100;
+		double[] losses = new double[size+1];
+		for(int u = 0 ; u <= size ; u++) {
+			double inter1 = ((2.0*u)/size)-0.5;
+			Vector newP = new Vector(params);
+			
+			for(int k = 0 ; k < nb_params ; k++) {
+				newP.v[k] += axe.v[k]*inter1; 
+			}
+			
+			counter = 0;
+			for(Matrix m : m_1.get_mats()) {
+				for(int i = 0 ; i < m.height ; i++) {
+					for(int j = 0 ; j < m.width ; j++) {
+						m.v[i][j] = newP.v[counter++];
+					}
+				}
+			}
+			for(Vector v2 : m_1.get_vecs()) {
+				for(int i = 0 ; i < v2.length; i++) {
+					v2.v[i] = newP.v[counter++];
+				}
+			}
+			
+			double loss = model.get_loss(train_data, train_refs);
+			losses[u] = loss;
+			m_1.get_mats().iterator().next().visualize("losses/loss"+u, 28, 16, 8, true, false, false);
+			System.out.println("For "+inter1 + " "+loss);
+		}
+		for(int i = 0 ; i <= size ; i++) {
+			System.out.println(losses[i]+";");
+		}
+	}
+	
 	public static void main(String[] args) {
 		// On initialise le générateur aléatoire
 		long time = System.currentTimeMillis();
@@ -201,8 +293,10 @@ public class MainMnistForward {
 		// Paramètres du modele
 		Parameters p = new Parameters("reg=0.00005", "lr=0.001");
 		// On crée notre modèle vide avec un mini_batch de 40
-		SGDOptimizer opt = new SGDOptimizer(p);
+		RMSOptimizer opt2 = new RMSOptimizer(p);
+		RMSOptimizer opt = new RMSOptimizer(p);
 		model = new FlatSequential(40, opt);
+		FlatSequential model2 = new FlatSequential(1000, opt2);
 		load_data();
 
 		// Modèle classique à 4 couches (entrée + cachée + cachée + sortie) avec 1000 et 100 neurones intermédiaires et des activations en sigmoide
@@ -219,21 +313,28 @@ public class MainMnistForward {
 		//model.add(new BatchnormLayer(128, p));
 		model.add(new ReLUActivation());
 		model.add(new AffineLayer(128, 128, true, p));
-		model.add(new ReLUActivation());
-		model.add(new AffineLayer(128, 128, true, p));
-		model.add(new ReLUActivation());
-		model.add(new AffineLayer(128, 128, true, p));
-		model.add(new ReLUActivation());
-		model.add(new AffineLayer(128, 128, true, p));
-		model.add(new ReLUActivation());
-		model.add(new AffineLayer(128, 128, true, p));
-		model.add(new ReLUActivation());
-		model.add(new AffineLayer(128, 128, true, p));
 		//model.add(new BatchnormLayer(128, p));
 		model.add(new ReLUActivation());
 		model.add(new DenseLayer(128, 10, 0, "none", false, p));
 		// Fonction de coût entropie croisée avec softmax
 		model.add(new SoftmaxCrossEntropy());
+		
+		p.set("dout", "false");
+		model2.add(new AffineLayer(784, 128, true, p));
+		p.set("dout", "true");
+		model2.add(new ReLUActivation());
+		model2.add(new AffineLayer(128, 128, true, p));
+		//model.add(new BatchnormLayer(128, p));
+		model2.add(new ReLUActivation());
+		model2.add(new AffineLayer(128, 128, true, p));
+		//model.add(new BatchnormLayer(128, p));
+		model2.add(new ReLUActivation());
+		model2.add(new AffineLayer(128, 128, true, p));
+		//model.add(new BatchnormLayer(128, p));
+		model2.add(new ReLUActivation());
+		model2.add(new DenseLayer(128, 10, 0, "none", false, p));
+		// Fonction de coût entropie croisée avec softmax
+		model2.add(new SoftmaxCrossEntropy());
 
 		System.out.println("# Model created with following architecture : ");
 		model.print_architecture();
@@ -261,6 +362,10 @@ public class MainMnistForward {
 			long t = System.currentTimeMillis();
 			// On lance l'époque
 			model.train_on_batch(train_data, train_refs);
+			model2.train_on_batch(train_data, train_refs);
+			model2.train_on_batch(train_data, train_refs);
+			model2.train_on_batch(train_data, train_refs);
+			model2.train_on_batch(train_data, train_refs);
 
 			// Temps que cela a pris pour effectuer l'époque
 			double epoch_time = (System.currentTimeMillis() - t) / 1000.;
@@ -282,14 +387,14 @@ public class MainMnistForward {
 			System.out.print("Top 1 accuracy (train, val) : " + df2.format(train_accuracy) + "% "
 					+ df2.format(validation_accuracy) + "% ");
 			System.out.print("loss " + df5.format(model.last_average_loss) + " ");
+			System.out.print(" Loss at model2 "+model2.get_loss(train_data, train_refs)+" ");
 			System.out.print("epoch time " + df2.format(epoch_time) + "s ");
 			System.out.print("forward time " + df2.format(validation_forward_t) + "s");
 
 			// Temps avant la fin de l'entraînement
 			System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
 		}
-		
-		draw_loss(opt);
+		draw_loss_1D(opt, opt2);
 
 		// Ecrit les données intéréssantes, comme la matrice de confusion etc.
 		/*

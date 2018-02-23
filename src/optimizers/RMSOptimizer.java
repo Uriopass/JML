@@ -1,5 +1,6 @@
 package optimizers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -12,6 +13,11 @@ import math.TrainableVector;
 import math.Vector;
 
 public class RMSOptimizer extends Optimizer {
+	ArrayList<TrainableMatrix> mats;
+	ArrayList<TrainableVector> vecs;
+	
+	
+	
 	HashMap<TrainableMatrix, Matrix> acc_mats;
 	HashMap<TrainableVector, Vector> acc_vec;
 	
@@ -27,6 +33,8 @@ public class RMSOptimizer extends Optimizer {
 		super(p);
 		acc_mats = new HashMap<>();
 		acc_vec = new HashMap<>();
+		mats = new ArrayList<>();
+		vecs = new ArrayList<>();
 		learning_rate = p.get_as_double("lr", 0.001);
 		learning_rate_decay = p.get_as_double("lrdecay", 1);
 		clip_low_bound = p.get_as_double("clip_l", Double.NEGATIVE_INFINITY);
@@ -37,6 +45,7 @@ public class RMSOptimizer extends Optimizer {
 	public void init_mat(TrainableMatrices layer) {
 		for(TrainableMatrix tm : layer.get_trainable_matrices()) {
 			acc_mats.put(tm, new Matrix(tm.width, tm.height));
+			mats.add(tm);
 		}
 	}
 
@@ -44,15 +53,16 @@ public class RMSOptimizer extends Optimizer {
 	public void init_vec(TrainableVectors layer) {
 		for(TrainableVector tv : layer.get_trainable_vectors()) {
 			acc_vec.put(tv, new Vector(tv.length));
+			vecs.add(tv);
 		}
 	}
 	
 	public Iterable<TrainableMatrix> get_mats() {
-		return acc_mats.keySet();
+		return mats;
 	}
 	
 	public Iterable<TrainableVector> get_vecs() {
-		return acc_vec.keySet();
+		return vecs;
 	}
 	
 	@Override
