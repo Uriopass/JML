@@ -2,6 +2,7 @@ package gan;
 
 import layers.Parameters;
 import layers.activations.LeakyReluActivation;
+import layers.activations.ReLUActivation;
 import layers.activations.SigmoidActivation;
 import layers.flat.AffineLayer;
 import layers.flat.DropoutLayer;
@@ -10,6 +11,7 @@ import layers.losses.SigmoidBinaryEntropyLoss;
 import math.Matrix;
 import math.RandomGenerator;
 import optimizers.RMSOptimizer;
+import optimizers.SGDOptimizer;
 import perceptron.FlatSequential;
 
 public class GenerativeAdversarialNetwork {
@@ -23,43 +25,45 @@ public class GenerativeAdversarialNetwork {
 		this.latent_space = latent_space_size;
 		this.input_size = input_size;
 
-		Parameters p = new Parameters("lr=0.001", "reg=0.0005", "dout=false");
+		Parameters p = new Parameters("lr=0.001", "reg=0.00001",  "dout=false");
 
 		generator = new FlatSequential(new RMSOptimizer(p));
 		discriminator = new FlatSequential(new RMSOptimizer(p));
 
-		generator.add(new AffineLayer(latent_space_size, 256, true, p));
-		generator.add(new LeakyReluActivation(0.2));
+		generator.add(new AffineLayer(latent_space_size, 32, true, p));
+		generator.add(new ReLUActivation());
 		p.set("dout", "true");
-		generator.add(new AffineLayer(256, 512, true, p));
-		generator.add(new LeakyReluActivation(0.2));
-		generator.add(new AffineLayer(512, 1024, true, p));
-		generator.add(new LeakyReluActivation(0.2));
-		generator.add(new AffineLayer(1024, 784, true, p));
-		generator.add(new SigmoidActivation());
 		
-		discriminator.add(new AffineLayer(784, 1024, true, p));
-		discriminator.add(new LeakyReluActivation(0.2));
+		generator.add(new AffineLayer(32, 32, true, p));
+		generator.add(new ReLUActivation());
+		
+		generator.add(new AffineLayer(32, 2, true, p));
+		
+		discriminator.add(new AffineLayer(2, 32, true, p));
+		discriminator.add(new ReLUActivation());
 		discriminator.add(new DropoutLayer(0.3));
-		discriminator.add(new AffineLayer(1024, 512, true, p));
-		discriminator.add(new LeakyReluActivation(0.2));
+		
+		discriminator.add(new AffineLayer(32, 32, true, p));
+		discriminator.add(new ReLUActivation());
 		discriminator.add(new DropoutLayer(0.3));
-		discriminator.add(new AffineLayer(512, 256, true, p));
-		discriminator.add(new LeakyReluActivation(0.2));
+		
+		discriminator.add(new AffineLayer(32, 32, true, p));
+		discriminator.add(new ReLUActivation());
 		discriminator.add(new DropoutLayer(0.3));
-		discriminator.add(new AffineLayer(256, 1, true, p));
+		
+		discriminator.add(new AffineLayer(32, 1, true, p));
 		discriminator.add(new SigmoidBinaryEntropyLoss());
 		
-		coordinates = RandomGenerator.normal(0, 1, 100, latent_space_size);
-		
+		coordinates = RandomGenerator.normal(0, 1, 100, latent_space_size);	
 	}
+	
 	int counter = 0;
 	public double train_discriminator(int samples, Matrix real_data, int start, int end) {
 		// Generate images
 		Matrix base = RandomGenerator.normal(0, 1, samples, latent_space);
 		Matrix generated = generator.forward(base, false);
 
-		Matrix fw = new Matrix(samples + (end-start), 784);
+		Matrix fw = new Matrix(samples + (end-start), this.input_size);
 		
 		// Add real images
 		for (int i = 0; i < end - start; i++) {

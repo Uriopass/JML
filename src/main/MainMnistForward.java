@@ -123,24 +123,31 @@ public class MainMnistForward {
 
 	public static void draw_loss(Optimizer opt) {
 		int nb_params = 0;
-		double norm = 0;
 		
 		for(Matrix m : opt.get_mats()) {
 			nb_params += m.width*m.height;
-			norm += m.norm2();
 		}
 		for(Vector v : opt.get_vecs()) {
 			nb_params += v.length;
-			norm += Vector.scale(v, v).sum();
 		}
-		System.out.println("# "+nb_params +" parameters with norm "+Math.sqrt(norm));
+		System.out.println("# "+nb_params +" parameters");
 
 		Vector params = new Vector(nb_params);
+		
+		
+		Vector axe1 = new Vector(nb_params);
+		Vector axe2 = new Vector(nb_params);//Vector.random_gaussian_vector(nb_params).set_len(Math.sqrt(norm));
 		int counter = 0;
 		for(Matrix m : opt.get_mats()) {
+			double m_norm = m.norm();
+			Vector m_gaus = Vector.random_gaussian_vector(m.height*m.width).set_len(m_norm);
+			Vector m_gaus2 = Vector.random_gaussian_vector(m.height*m.width).set_len(m_norm);
 			for(int i = 0 ; i < m.height ; i++) {
 				for(int j = 0 ; j < m.width ; j++) {
-					params.v[counter++] = m.v[i][j];
+					params.v[counter] = m.v[i][j];
+					axe1.v[counter] = m_gaus.v[i*m.width+j];
+					axe2.v[counter] = m_gaus2.v[i*m.width+j];
+					counter++;
 				}
 			}
 		}
@@ -149,10 +156,6 @@ public class MainMnistForward {
 				params.v[counter++] = v.v[i];
 			}
 		}
-		
-		
-		Vector axe1 = Vector.random_gaussian_vector(nb_params).set_len(Math.sqrt(norm));
-		Vector axe2 = Vector.random_gaussian_vector(nb_params).set_len(Math.sqrt(norm));
 		
 		int size = 12;
 		double[][] losses = new double[size+1][size+1];
@@ -178,7 +181,7 @@ public class MainMnistForward {
 					}
 				}
 				
-				double loss = model.get_loss(train_data, train_refs);
+				double loss = model.get_loss(test_data, test_refs);
 				losses[u][v] = loss;
 				System.out.println("For "+inter1 + " "+inter2+" "+loss);
 			}
@@ -293,10 +296,8 @@ public class MainMnistForward {
 		// Paramètres du modele
 		Parameters p = new Parameters("reg=0.00005", "lr=0.001");
 		// On crée notre modèle vide avec un mini_batch de 40
-		RMSOptimizer opt2 = new RMSOptimizer(p);
-		RMSOptimizer opt = new RMSOptimizer(p);
-		model = new FlatSequential(40, opt);
-		FlatSequential model2 = new FlatSequential(1000, opt2);
+		Optimizer opt = new RMSOptimizer(p);
+		model = new FlatSequential(400, opt);
 		load_data();
 
 		// Modèle classique à 4 couches (entrée + cachée + cachée + sortie) avec 1000 et 100 neurones intermédiaires et des activations en sigmoide
@@ -318,24 +319,6 @@ public class MainMnistForward {
 		model.add(new DenseLayer(128, 10, 0, "none", false, p));
 		// Fonction de coût entropie croisée avec softmax
 		model.add(new SoftmaxCrossEntropy());
-		
-		p.set("dout", "false");
-		model2.add(new AffineLayer(784, 128, true, p));
-		p.set("dout", "true");
-		model2.add(new ReLUActivation());
-		model2.add(new AffineLayer(128, 128, true, p));
-		//model.add(new BatchnormLayer(128, p));
-		model2.add(new ReLUActivation());
-		model2.add(new AffineLayer(128, 128, true, p));
-		//model.add(new BatchnormLayer(128, p));
-		model2.add(new ReLUActivation());
-		model2.add(new AffineLayer(128, 128, true, p));
-		//model.add(new BatchnormLayer(128, p));
-		model2.add(new ReLUActivation());
-		model2.add(new DenseLayer(128, 10, 0, "none", false, p));
-		// Fonction de coût entropie croisée avec softmax
-		model2.add(new SoftmaxCrossEntropy());
-
 		System.out.println("# Model created with following architecture : ");
 		model.print_architecture();
 
@@ -361,11 +344,12 @@ public class MainMnistForward {
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
 			// On lance l'époque
-			model.train_on_batch(train_data, train_refs);
+			model.train_on_batch(train_data, train_refs); /*
 			model2.train_on_batch(train_data, train_refs);
 			model2.train_on_batch(train_data, train_refs);
 			model2.train_on_batch(train_data, train_refs);
 			model2.train_on_batch(train_data, train_refs);
+			*/
 
 			// Temps que cela a pris pour effectuer l'époque
 			double epoch_time = (System.currentTimeMillis() - t) / 1000.;
@@ -387,14 +371,14 @@ public class MainMnistForward {
 			System.out.print("Top 1 accuracy (train, val) : " + df2.format(train_accuracy) + "% "
 					+ df2.format(validation_accuracy) + "% ");
 			System.out.print("loss " + df5.format(model.last_average_loss) + " ");
-			System.out.print(" Loss at model2 "+model2.get_loss(train_data, train_refs)+" ");
+			System.out.print("Acc at test "+100.*model.correct_count(test_data, test_refs)/T+" ");
 			System.out.print("epoch time " + df2.format(epoch_time) + "s ");
 			System.out.print("forward time " + df2.format(validation_forward_t) + "s");
 
 			// Temps avant la fin de l'entraînement
 			System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
 		}
-		draw_loss_1D(opt, opt2);
+		draw_loss(opt);
 
 		// Ecrit les données intéréssantes, comme la matrice de confusion etc.
 		/*
@@ -403,7 +387,6 @@ public class MainMnistForward {
 		metrics.write_time_series_csv("./out_mnist/time_series.csv");
 		 */
 		// Valeur sur les données de test
-		System.out.println(
-				"Value at final test  : " + df2.format((100. * model.correct_count(test_data, test_refs)) / T) + "%");
+		System.out.println("Value at final test  : " + df2.format((100. * model.correct_count(test_data, test_refs)) / T) + "%");
 	}
 }

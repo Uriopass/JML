@@ -6,7 +6,7 @@ package math;
 public class Initialisations {
 	// he_uniform prend un nombre au hasard uniformément dans l'intervalle [-var ; var] avec var = sqrt(6 / fan_in)
 	public static void he_uniform(Matrix m, int fan_in, double multiplier) {
-		double bound = multiplier * Math.sqrt(6f / (fan_in));
+		double bound = multiplier * Math.sqrt(2f / (fan_in));
 
 		for (int i = 0; i < m.height; i++) {
 			for (int j = 0; j < m.width; j++) {
