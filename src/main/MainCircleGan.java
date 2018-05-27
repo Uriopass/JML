@@ -26,31 +26,30 @@ import perceptron.FlatSequential;
 public class MainCircleGan {
 	public static GenerativeAdversarialNetwork model;
 
-	// Nombre d'epoque max
 	public final static int EPOCHMAX = 40000;
 
-	// Nombre de donn�es d'entrainements
+	// Number of training points
 	public static final int N = 80;
 
-	// Matrices de donn�es
+	// Matrix containing the training daat
 	public static Matrix train_data;
 	
-	// Seed utilis� pour la reproducibilit�
-	public static long seed = System.currentTimeMillis();
+	// Seed used for reproducibility
+	public static long seed;
 
 	public static void load_data() {
-		/* Creation des donnees */
 		train_data = new Matrix(N, 2);
 
-		/* Donnees d'apprentissage */
+		// Creating data from random points on a circle
 		for (int l = 0; l < N; l++) {
 			double angle = RandomGenerator.uniform(0, 2*Math.PI);
 			train_data.set_column(l, new Vector(new double[]{Math.cos(angle), Math.sin(angle)}));
 		}
 
-		System.out.println("# Train set built with " + N+ " images");
+		System.out.println("# Train set built with " + N+ " points");
 	}
 
+	// Creating a matrix with a grid of points on [-2; 2] in x and y for the discriminator vizualisation
 	public static Matrix batch = new Matrix(100*100, 2);;
 	static {
 		for(int i = 0 ; i < 100 ; i++) {
@@ -65,6 +64,7 @@ public class MainCircleGan {
 		BufferedImage bf = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_ARGB);
 		Matrix res = model.discriminator.forward(batch, false);
 
+		// Visualizing discriminator
 		Matrix points = train_data;
 		for(int y = 0 ; y < 100 ; y++) {
 			for(int x = 0 ; x < 100 ; x++) {
@@ -80,6 +80,7 @@ public class MainCircleGan {
 				}
 			}
 		}
+		// Visualizing generator
 		Matrix res2 = model.test_generator();
 		for(int i = 0 ; i < res2.width ; i++) {
 			int x = (int)((res2.v[0][i]+2)*1000/4);
@@ -93,6 +94,7 @@ public class MainCircleGan {
 			}
 		}
 		
+		// Visualizing training data
 		for(int i = 0 ; i < points.width ; i++) {
 			int x = (int)((points.v[0][i]+2)*1000/4);
 			int y = (int)((points.v[1][i]+2)*1000/4);
@@ -119,12 +121,13 @@ public class MainCircleGan {
 		RandomGenerator.init(seed);
 		System.out.println("# Seed : " + seed);
 
+		// Creating the networks
 		model = new GenerativeAdversarialNetwork(2, 2);
 		load_data();
 		
 		System.out.println("# Processors : " + Runtime.getRuntime().availableProcessors());
 
-		// Permet d'afficher les nombres avec une pr�cision d�finie � l'avance
+		// Useful to print numbers
 		DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.getDefault());
 		otherSymbols.setDecimalSeparator('.');
 		otherSymbols.setGroupingSeparator(',');
@@ -134,22 +137,13 @@ public class MainCircleGan {
 		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
 
 		int mini_batch = 80;
-		int counterlala = 0;
 		
 		for (int i = 1; i <= EPOCHMAX; i++) {
 			long t = System.currentTimeMillis();
-
-			//int tenth = train_data.width / (mini_batch * 10);
-			System.out.print("[");
 			Vector total_loss = new Vector(2);
 			double l1=0, l2=0;
 			
 			for (int k = 0; k < train_data.width / mini_batch; k++) {
-				/*if(k%tenth == 0) {
-					System.out.print("=");
-					//System.out.println(l1 + " " + l2);
-					//model.test_generator().T().visualize("fig2/test_gan"+(counterlala++), 28, 10, 10, true, true, false);
-				}*/
 
 				l1 = model.train_discriminator(mini_batch, train_data, k*mini_batch, (k+1)*mini_batch);
 				l2 = model.train_generator(mini_batch);
@@ -158,11 +152,10 @@ public class MainCircleGan {
 				total_loss.v[1] += l2;
 			}
 			total_loss.scale(1. / (train_data.width / mini_batch));
-			System.out.print("] ");
 			
 			System.out.println(total_loss);
 
-			// Temps que cela a pris pour effectuer l'�poque
+			// Time it took to execute one epoch
 			double epoch_time = (System.currentTimeMillis() - t) / 1000.;
 
 			t = System.currentTimeMillis(); 
@@ -170,9 +163,10 @@ public class MainCircleGan {
 			System.out.print(i + ((i >= 10) ? " " : "  "));
 			System.out.print("epoch time " + df2.format(epoch_time) + "s ");
 
-			// Temps avant la fin de l'entra�nement
+			// Time before doing it all
 			System.out.println(" ETA " + df2.format((EPOCHMAX - i) * (epoch_time)) + "s");
-			if(i%100 == 0) {
+			// Visualizing every 100 epochs
+			if(i%100 == 0) { 
 				visu_current("circlegan/"+i/100);
 			}
 		}
