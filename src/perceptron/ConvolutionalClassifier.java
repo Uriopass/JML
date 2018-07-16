@@ -8,8 +8,6 @@ import layers.FlatLayer;
 import layers.Layer;
 import layers.features.Flatten;
 import layers.features.Unflatten;
-import layers.flat.AffineLayer;
-import layers.flat.BatchnormLayer;
 import layers.losses.Loss;
 import math.FeatureMatrix;
 import math.Matrix;

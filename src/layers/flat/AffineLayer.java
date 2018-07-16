@@ -1,5 +1,6 @@
 package layers.flat;
 
+import java.io.FileNotFoundException;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -11,7 +12,6 @@ import math.Initialisations;
 import math.Matrix;
 import math.TrainableMatrix;
 import math.TrainableVector;
-import math.Vector;
 
 /**
  * Cette classe correspond à une transformation affine avec biais d'un espace de fan_in dimensions vers fan_out dimensions.
@@ -20,9 +20,7 @@ import math.Vector;
  */
 public class AffineLayer implements FlatLayer, TrainableMatrices, TrainableVectors {
 	private Matrix cache;
-
-	// Régularisation L2
-	public double regularization;
+	
 	// permet d'éviter de calculer la dérivée par rapport aux données pour la première couche
 	public boolean calculate_dout;
 
@@ -52,14 +50,15 @@ public class AffineLayer implements FlatLayer, TrainableMatrices, TrainableVecto
 		vectors.put("b", new TrainableVector(fan_out));
 
 		if (init) {
-			Initialisations.xavier(matrices.get("w"), fan_in, fan_out);
+			//TODO
+			//Initialisations.xavier(matrices.get("w"), fan_in, fan_out);
+			Initialisations.gaussian(matrices.get("w"),0.01);
 		}
 
 		if (p == null) {
 			p = new Parameters();
 		}
 
-		this.regularization = p.get_as_double("reg", 0);
 		this.calculate_dout = p.get_or_default("dout", "true").equalsIgnoreCase("true");
 	}
 
@@ -91,28 +90,36 @@ public class AffineLayer implements FlatLayer, TrainableMatrices, TrainableVecto
 		// x' = (w.T)*dout
 		if(train) {	
 			matrices.get("w").grad.add(dout.parralel_mult(cache.T()).scale(1.0 / cache.width));
-			if(regularization != 0)
-				matrices.get("w").grad.add(Matrix.scale(matrices.get("w"), regularization));
 			vectors.get("b").grad.add(dout.sum(Matrix.AXIS_WIDTH).scale(1.0 / cache.width));
 		}
 		
 		if (!calculate_dout)
 			return null;
 
-		return matrices.get("w").T().parralel_mult(dout);
+		return Matrix.parralel_mult(matrices.get("w").T(), dout);
 	}
 	
-	public Matrix get_weight() {
+	public TrainableMatrix get_weight() {
 		return matrices.get("w");
 	}
 
-	public Vector get_bias() {
+	public TrainableVector get_bias() {
 		return vectors.get("b");
+	}
+	
+	public void write_to_file(String name) {
+		matrices.get("w").write_to_file(name+"/w");
+		vectors.get("b").to_row_matrix().write_to_file(name+"/b");
+	}
+	
+	public void load_from_file(String name) throws FileNotFoundException {
+		matrices.get("w").load_from_file(name+"/w");
+		vectors.get("b").replace_by(Matrix.generate_from_file(name+"/b").get_row(0));
 	}
 
 	@Override
 	public String toString() {
-		return "AffineLayer(" + fan_in + ", " + fan_out + ", reg=" + regularization
+		return "AffineLayer(" + fan_in + ", " + fan_out
 			 + ((calculate_dout) ? "" : ", dout=false") + ")";
 	}
 

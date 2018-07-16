@@ -11,5 +11,4 @@ public class TrainableVector extends Vector {
 		grad = new Vector(length);
 		acc = new Vector(length);
 	}
-
 }

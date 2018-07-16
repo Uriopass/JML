@@ -94,4 +94,8 @@ public abstract class ActivationLayer implements FlatLayer {
 		}
 		return dout;
 	}
+	
+	public void set_cache_after(Matrix m_cache_after) {
+		this.m_cache_after = m_cache_after;
+	}
 }

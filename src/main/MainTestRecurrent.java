@@ -2,6 +2,7 @@ package main;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,8 +11,10 @@ import java.util.Scanner;
 import datareaders.MnistReader;
 import image.ImageConverter;
 import layers.Parameters;
+import layers.flat.DenseLayer;
 import layers.losses.SoftmaxCrossEntropy;
-import layers.reccurent.SimpleRecManyToOne;
+import layers.reccurent.GRUCell;
+import layers.reccurent.RNNCellCache;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
@@ -108,9 +111,6 @@ public class MainTestRecurrent {
 		int[] all_test_refs = MnistReader.getLabels(test_labelDB);
 		System.out.println("# Database loaded !");
 
-		/* Taille des images et donc de l'espace de representation */
-		int SIZEW = 28 * 28;
-
 		/* Creation des donnees */
 		train_data = new ArrayList<>();
 		train_refs = new ArrayList<>();
@@ -174,7 +174,8 @@ public class MainTestRecurrent {
 		return "masculin";
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
+		System.in.read();
 		load_mnist_data();
 		// On initialise le générateur aléatoire
 		long time = System.currentTimeMillis();
@@ -185,69 +186,61 @@ public class MainTestRecurrent {
 		// Paramètres du modele
 		Parameters p = new Parameters("reg=0", "lr=0.001");
 
-		SimpleRecManyToOne model = new SimpleRecManyToOne(1, 10, true, 1, "tanh", p);
+		int units = 50;
+		
+		GRUCell model = new GRUCell(units, 1, p);
 		SoftmaxCrossEntropy loss = new SoftmaxCrossEntropy();
+		DenseLayer out_l = new DenseLayer(units, 10, 0, "none", false, p);
 		RMSOptimizer rmsopt = new RMSOptimizer(p);
+		
 		rmsopt.init_mat(model);
 		rmsopt.init_vec(model);
+		
+		rmsopt.init_mat(out_l.al);
+		rmsopt.init_vec(out_l.al);
 		
 		System.out.println("# Processors : " + Runtime.getRuntime().availableProcessors());
 
 		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
 
 		for (int epoch = 1; epoch <= 1; epoch++) {
-			//long t = System.currentTimeMillis();
-			model.initRec();
 			double lossAverage = 0;
-			int correct = 0;
+			//int correct = 0;
 			long haha = System.currentTimeMillis();
-			for(int k = 0 ; k < train_data.size() ; k++) {
-				Matrix d = train_data.get(k);
-				model.initRec();
-				for(int l = 0 ; l < d.width ; l++) {
-					model.tick(d.get_column(l).to_column_matrix(), true);
+			for(int k = 0 ; k < train_data.size()/32-1 ; k++) {
+				Matrix batch = new Matrix(32, 784);
+				for(int j = 0 ; j < 32 ; j++)
+					batch.set_column(j, train_data.get(k*32+j).get_row(0));
+				ArrayList<RNNCellCache> caches = new ArrayList<>();
+				Matrix state = new Matrix(32, units);
+				
+				for(int l = 0 ; l < batch.height ; l++) {
+					RNNCellCache c = new RNNCellCache();
+					state = model.step(batch.get_row(l).to_row_matrix(), state, true, c);
+					caches.add(c);
 				}
-				Matrix out = model.get_out(true);
+				Matrix out = out_l.forward(state, true);
 				loss.feed_ref(train_refs.get(k));
 				Matrix real_out = loss.forward(out, true);
-				Matrix dout = loss.backward(new Matrix(real_out), true);
-				model.backwardAll(dout, true);
-				rmsopt.optimize();
-				lossAverage += loss.loss;
-				if(real_out.get_column(0).argmax() == train_refs.get(k).get_column(0).argmax()) {
-					correct++;
-				}
 				
-				if((k+1)%100 == 0) {
-					System.out.println(correct + " " + lossAverage/100 + " " + (k+1) + " " + train_data.size() +" "+
-							model.state_aff.get_weight().sum());
-					correct = 0;
-					lossAverage = 0;
+				//System.out.println(real_out.get_column(0));
+				
+				Matrix dout = loss.backward(new Matrix(real_out), true);
+				dout = out_l.backward(dout, true);
+				
+				while(caches.size() > 0) {
+					dout = model.backward(dout, caches.get(caches.size()-1));
+					caches.remove(caches.size()-1);
 				}
+				lossAverage += loss.loss;
+				
+				System.out.println(lossAverage + " " + (k+1)*32 + " " + train_data.size());
+				lossAverage = 0;
+				rmsopt.optimize();
 			}
 			System.out.println(System.currentTimeMillis()-haha);
 			System.out.println("EPOCH END");
-			model.state_aff.get_weight().print_values();
 			System.out.println( "--");
-			model.out_aff.get_weight().print_values();
-			System.out.println(model.out_aff.get_bias());
-			for(int i = 0 ; i < 5 ; i++) {
-				int indice = RandomGenerator.uniform_int(train_data.size());
-				System.out.println("example of state for "+matrix_to_name(train_data.get(indice)));
-				Matrix d = train_data.get(indice);
-				
-				model.initRec();
-				model.state.T().print_values();
-				for(int l = 0 ; l < d.width ; l++) {
-					model.tick(d.get_column(l).to_column_matrix(), false);
-					System.out.println(matrix_to_name(d.get_column(l).to_column_matrix())+" " + model.state.get_column(0));
-				}
-				Matrix out = model.get_out(false);
-				out.T().print_values();
-				train_refs.get(indice).T().print_values();
-			
-				System.out.println(out_to_genre(out.get_column(0)));
-			}
 		}
 		
 	}

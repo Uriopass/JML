@@ -9,14 +9,9 @@ import java.util.Locale;
 import datareaders.MnistReader;
 import gan.GenerativeAdversarialNetwork;
 import image.ImageConverter;
-import layers.Parameters;
-import layers.flat.DenseLayer;
-import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
-import perceptron.MLPMetrics;
-import perceptron.FlatSequential;
 
 public class MainMnistGan {
 	// Chemin vers les donn�es
@@ -54,8 +49,6 @@ public class MainMnistGan {
 		/* Creation des donnees */
 		train_data = new Matrix(N, SIZEW);
 
-		final int TOTAL = train_images.size();
-
 		/* Donnees d'apprentissage */
 		for (int l = 0; l < N; l++) {
 			double[] image = ImageConverter.image2VecteurReel(train_images.get(l));
@@ -72,7 +65,7 @@ public class MainMnistGan {
 		long time = System.currentTimeMillis();
 		seed = 1510437982659L;
 		RandomGenerator.init(seed);
-		System.out.println("# Seed : " + seed);
+		System.out.println("# Seed : " + seed); 
 
 		model = new GenerativeAdversarialNetwork(784, 8);
 		load_data();
@@ -84,7 +77,6 @@ public class MainMnistGan {
 		otherSymbols.setDecimalSeparator('.');
 		otherSymbols.setGroupingSeparator(',');
 		DecimalFormat df2 = new DecimalFormat("#0.00", otherSymbols);
-		DecimalFormat df5 = new DecimalFormat("#0.00000", otherSymbols);
 
 		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
 

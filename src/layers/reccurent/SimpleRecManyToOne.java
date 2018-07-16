@@ -3,10 +3,10 @@ package layers.reccurent;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import layers.FlatLayer;
 import layers.Parameters;
 import layers.TrainableMatrices;
 import layers.TrainableVectors;
-import layers.activations.ActivationLayer;
 import layers.activations.ActivationParser;
 import layers.flat.AffineLayer;
 import math.Matrix;
@@ -15,7 +15,7 @@ import math.TrainableVector;
 public class SimpleRecManyToOne implements TrainableMatrices, TrainableVectors {
 	public Matrix state;
 	
-	public ActivationLayer state_act;
+	public FlatLayer state_act;
 	public AffineLayer state_aff;
 	public AffineLayer out_aff;
 

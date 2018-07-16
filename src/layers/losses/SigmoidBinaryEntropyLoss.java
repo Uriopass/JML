@@ -3,6 +3,9 @@ package layers.losses;
 import math.Activations;
 import math.Matrix;
 
+/**
+ * Applies a sigmoid activation then uses a binary (entropy) loss on the output
+ */
 public class SigmoidBinaryEntropyLoss extends Loss {
 	@Override
 	public Matrix forward(Matrix in, boolean training) {

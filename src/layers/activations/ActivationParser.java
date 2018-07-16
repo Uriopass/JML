@@ -1,10 +1,12 @@
 package layers.activations;
 
+import layers.FlatLayer;
+
 /**
  * Cette classe permet de transformer une string en activation, utile quand l'activation est un paramètre comme dans DenseLayer()
  */
 public class ActivationParser {
-	public static ActivationLayer get_activation_by_name(String name) {
+	public static FlatLayer get_activation_by_name(String name) {
 		switch (name.toLowerCase()) {
 		case "tanh":
 			return new TanhActivation();

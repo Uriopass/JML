@@ -24,12 +24,27 @@ public class Initialisations {
 			}
 		}
 	}
+	
+	// xavier prend un nombre au hasard selon une distribution gaussienne
+	public static void gaussian(Matrix m, double var) {
+		for (int i = 0; i < m.height; i++) {
+			for (int j = 0; j < m.width; j++) {
+				m.v[i][j] = RandomGenerator.gaussian(var);
+			}
+		}
+	}
 
 	public static void he_uniform(Vector v, int fan_in, double multiplier) {
 		double bound = multiplier * Math.sqrt(6f / (fan_in));
 
 		for (int j = 0; j < v.length; j++) {
 			v.v[j] = RandomGenerator.uniform(-bound, bound);
+		}
+	}
+	
+	public static void fill(Vector v, double val) {
+		for(int i = 0 ; i < v.length ; i++) {
+			v.v[i] = val;
 		}
 	}
 }

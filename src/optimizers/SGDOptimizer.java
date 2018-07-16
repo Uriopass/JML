@@ -16,6 +16,7 @@ public class SGDOptimizer extends Optimizer {
 	
 	public double learning_rate;
 	public double learning_rate_decay;
+	public double regularization;
 	
 	public SGDOptimizer(Parameters p) {
 		super(p);
@@ -24,6 +25,7 @@ public class SGDOptimizer extends Optimizer {
 
 		learning_rate = p.get_as_double("lr", 0.001);
 		learning_rate_decay = p.get_as_double("lrdecay", 1);
+		regularization = p.get_as_double("reg", 0);
 	}
 
 	@Override
@@ -53,7 +55,7 @@ public class SGDOptimizer extends Optimizer {
 			for (int i = 0; i < m.height; i++) {
 				for (int j = 0; j < m.width; j++) {
 					// w -= lr * grad
-					m.v[i][j] -= learning_rate * m_grad.v[i][j];
+					m.v[i][j] -= learning_rate * (m_grad.v[i][j] + m.v[i][j]*regularization);
 					m_grad.v[i][j] = 0;
 				}
 			}

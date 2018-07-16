@@ -6,22 +6,14 @@ import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.List;
 import java.util.Locale;
 
 import javax.imageio.ImageIO;
 
-import datareaders.MnistReader;
 import gan.GenerativeAdversarialNetwork;
-import image.ImageConverter;
-import layers.Parameters;
-import layers.flat.DenseLayer;
-import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;
 import math.RandomGenerator;
 import math.Vector;
-import perceptron.MLPMetrics;
-import perceptron.FlatSequential;
 
 public class MainCircleGan {
 	public static GenerativeAdversarialNetwork model;
@@ -132,7 +124,6 @@ public class MainCircleGan {
 		otherSymbols.setDecimalSeparator('.');
 		otherSymbols.setGroupingSeparator(',');
 		DecimalFormat df2 = new DecimalFormat("#0.00", otherSymbols);
-		DecimalFormat df5 = new DecimalFormat("#0.00000", otherSymbols);
 
 		System.out.println("# Initialization took " + (System.currentTimeMillis() - time) + " ms");
 

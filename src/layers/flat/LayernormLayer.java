@@ -11,83 +11,66 @@ import math.Matrix;
 import math.TrainableVector;
 import math.Vector;
 
-/**
- * Implementation de la normalisation par batch, permettant d'aider à la
- * convergence sur des réseaux profonds en forcant mean = alpha et var = beta.
- * Par défaut alpha = 0 et beta = 1 mais ce sont des paramètres appris par le
- * réseau. Le code n'est pas commenté car cette couche est hors-programme.
- */
-public class BatchnormLayer implements FlatLayer, TrainableVectors {
+public class LayernormLayer implements FlatLayer, TrainableVectors {
 
 	final static double epsilon = 1e-4;
-
-	Vector running_mean, running_var;
 
 	private Matrix xmu, carre;
 
 	private Vector var, sqrtvar, invvar, mu;
-	private Matrix va2;
 
 	public HashMap<String, TrainableVector> vectors = new HashMap<>();
-	public double momentum;
 
-	public int fan_in;
-
-	public BatchnormLayer(int fan_in, Parameters param) {
-		this.fan_in = fan_in;
-		vectors.put("gamma", new TrainableVector(fan_in));
-		vectors.put("beta", new TrainableVector(fan_in));
+	public LayernormLayer(Parameters param) {
+		vectors.put("gamma", new TrainableVector(1));
+		vectors.put("beta", new TrainableVector(1));
 		
-		running_mean = new Vector(fan_in);
-		running_var = new Vector(fan_in);
-
 		vectors.get("gamma").fill(1);
-		running_var.fill(1);
-		
-		momentum = param.get_as_double("momentum", 0.9);
 	}
 
 	@Override
 	public Matrix forward(Matrix in, boolean training) {
-		if (training) {
-			// Step 1
-			mu = in.sum(Matrix.AXIS_WIDTH).scale(-1.0 / in.width);
-
-			// Step 2
-			in.add(mu, Matrix.AXIS_WIDTH);
-			xmu = new Matrix(in);
-
-			// Step 3
-			carre = Matrix.hadamart(xmu, xmu); // square
-			// Step 4
-			var = carre.sum(Matrix.AXIS_WIDTH).scale(1.0 / in.width); // average
-
-			// Step 5
-			sqrtvar = new Vector(var).add(epsilon).power(0.5);
-
-			// Step 6
-			invvar = new Vector(sqrtvar).inverse();
-
-			// Step 7
-			in.scale(invvar, Matrix.AXIS_WIDTH);
-			va2 = new Matrix(in);
-			// Step 8
-			in.scale(vectors.get("gamma"), Matrix.AXIS_WIDTH);
-			// Step 9
-			in.add(vectors.get("beta"), Matrix.AXIS_WIDTH);
-			running_mean = running_mean.scale(momentum).add(new Vector(mu).scale(1 - momentum));
-			running_var = running_var.scale(momentum).add(new Vector(var).scale(1 - momentum));
-		} else {
-			in.add(running_mean, Matrix.AXIS_WIDTH);
-			in.scale(new Vector(running_var).power(0.5).add(epsilon).inverse(), Matrix.AXIS_WIDTH);
-			in.scale(vectors.get("gamma"), Matrix.AXIS_WIDTH);
-			in.add(vectors.get("beta"), Matrix.AXIS_WIDTH);
+		if(training || !training) {
+			throw new RuntimeException("Not implemented yet");
 		}
+		// Step 1
+		mu = in.sum(Matrix.AXIS_HEIGHT).scale(-1.0 / in.height);
+
+		// Step 2
+		in.add(mu, Matrix.AXIS_HEIGHT);
+		xmu = new Matrix(in);
+
+		// Step 3
+		carre = Matrix.hadamart(xmu, xmu); // square
+		
+		// Step 4
+		var = carre.sum(Matrix.AXIS_HEIGHT).scale(1.0 / in.height); // average
+
+		// Step 5
+		sqrtvar = new Vector(var).add(epsilon).power(0.5);
+
+		// Step 6
+		invvar = new Vector(sqrtvar).inverse();
+
+		// Step 7
+		in.scale(invvar, Matrix.AXIS_WIDTH);
+		
+		double gamma = vectors.get("gamma").v[0];
+		double beta = vectors.get("beta").v[0];
+		
+		// Step 8
+		in.scale(gamma);
+
+		// Step 9
+		in.add(beta);
+		
 		return in;
 	}
 
 	@Override
 	public Matrix backward(Matrix dout, boolean train) {
+		throw new RuntimeException("Not implemented yet");
+		/*
 		int N = dout.width;
 		// Step 9
 		Matrix dva3 = dout;
@@ -114,6 +97,7 @@ public class BatchnormLayer implements FlatLayer, TrainableVectors {
 		// Step 1
 		dxmu.add(dmu, Matrix.AXIS_WIDTH);
 		return dxmu;
+		*/
 	}
 	
 	public void write_to_file(String name) {
@@ -128,7 +112,7 @@ public class BatchnormLayer implements FlatLayer, TrainableVectors {
 	
 	@Override
 	public String toString() {
-		return "BatchnormLayer(" + fan_in + ")";
+		return "LayernormLayer()";
 	}
 
 	@Override

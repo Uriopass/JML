@@ -11,7 +11,6 @@ import java.util.Scanner;
 import layers.Parameters;
 import layers.activations.ReLUActivation;
 import layers.flat.AffineLayer;
-import layers.flat.BatchnormLayer;
 import layers.flat.DropoutLayer;
 import layers.losses.SoftmaxCrossEntropy;
 import math.Matrix;

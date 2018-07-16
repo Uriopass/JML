@@ -7,8 +7,6 @@ import math.Matrix;
  * L(x, y) = 0.5*(x-y)^2
  */
 public class QuadraticLoss extends Loss {
-
-	Matrix ref;
 	public double loss;
 
 	@Override
@@ -18,7 +16,7 @@ public class QuadraticLoss extends Loss {
 
 	@Override
 	public Matrix backward(Matrix dout, boolean train) {
-		dout.add(ref.scale(-1));
+		dout.add(refs.scale(-1));
 		loss = 0.5 * Matrix.hadamart(dout, dout).sum() / dout.width;
 		return dout;
 	}

@@ -16,8 +16,6 @@ public class RMSOptimizer extends Optimizer {
 	ArrayList<TrainableMatrix> mats;
 	ArrayList<TrainableVector> vecs;
 	
-	
-	
 	HashMap<TrainableMatrix, Matrix> acc_mats;
 	HashMap<TrainableVector, Vector> acc_vec;
 	
@@ -25,9 +23,7 @@ public class RMSOptimizer extends Optimizer {
 	public double learning_rate_decay;
 	public double clip_low_bound;
 	public double clip_high_bound;
-	
-	
-	
+	public double regularization;
 	
 	public RMSOptimizer(Parameters p) {
 		super(p);
@@ -35,6 +31,7 @@ public class RMSOptimizer extends Optimizer {
 		acc_vec = new HashMap<>();
 		mats = new ArrayList<>();
 		vecs = new ArrayList<>();
+		regularization = p.get_as_double("reg", 0);
 		learning_rate = p.get_as_double("lr", 0.001);
 		learning_rate_decay = p.get_as_double("lrdecay", 1);
 		clip_low_bound = p.get_as_double("clip_l", Double.NEGATIVE_INFINITY);
@@ -79,14 +76,11 @@ public class RMSOptimizer extends Optimizer {
 					// acc[t+1] = gamma * acc[t] + (1 - gamma) * grad^2
 					acc.v[l][m] = gamma * acc.v[l][m] + (1 - gamma) * w_grad.v[l][m] * w_grad.v[l][m];
 	
-					// grad *= - lr / sqrt(epsilon + acc[t+1])
-					w_grad.v[l][m] *= -learning_rate / (Math.sqrt(eps + acc.v[l][m]));
-	
-					// w += grad
-					w.v[l][m] += w_grad.v[l][m];
+					// w += (grad+regu)  * (- lr) / sqrt(epsilon + acc[t+1])
+					w.v[l][m] += (w_grad.v[l][m] + w.v[l][m]*regularization) * (-learning_rate) / (Math.sqrt(eps + acc.v[l][m]));
 					w.v[l][m] = Math.min(clip_high_bound, Math.max(clip_low_bound, w.v[l][m]));
 					
-					
+					// grad = 0
 					w_grad.v[l][m] = 0;
 				}
 			}

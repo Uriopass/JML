@@ -88,7 +88,7 @@ public class QLearn {
 			}
 			//System.out.println("--");
 			//env.print_state();
-			for(int t = 1 ; ; t++) {
+			for(;;){
 				Vector previous = env.get_state();
 				int a;
 				if(RandomGenerator.uniform(0.0, 1.0) < eps) {

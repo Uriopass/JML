@@ -50,12 +50,39 @@ public class Vector {
 			this.v[i] = v.v[i];
 	}
 	
+	public Vector(Matrix m) {
+		if(m.height == 1) {
+			v = new double[m.width];
+			this.length = v.length;
+			
+			for(int i = 0 ; i < length ; i++) {
+				this.v[i] = m.v[0][i];
+			}
+		}
+		if(m.width == 1) {
+			v = new double[m.height];
+			this.length = v.length;
+			
+			for(int i = 0 ; i < length ; i++) {
+				this.v[i] = m.v[i][0];
+			}
+		}
+		throw new RuntimeException("Matrix was not either width 1 or height 1 to transform to a vector");
+	}
+
 	public static Vector one_hot(int length, int position) {
 		Vector v = new Vector(length);
 		v.v[position] = 1;
 		return v;
 	}
 
+	public Vector abs() {
+		for(int i = 0 ; i < length ; i++) {
+			v[i] = Math.abs(v[i]);
+		}
+		return this;
+	}
+	
 	/**
 	 * Ajoute un scalaire à ce vecteur
 	 * @param val scalaire à ajouter
@@ -67,7 +94,7 @@ public class Vector {
 		}
 		return this;
 	}
-
+	
 	/**
 	 * Ajoute un vecteur à ce vecteur
 	 * @param b vecteur à ajouter
@@ -248,6 +275,15 @@ public class Vector {
 		return res;
 	}
 
+	public void print_values() {
+		System.out.println(this);
+	}
+
+	public void replace_by(Vector v) {
+		this.length = v.length;
+		this.v = v.v;
+	}
+	
 	/**
 	 * Multiplie ce vecteur par un scalaire scalar
 	 * @param scalar scalaire à utiliser
@@ -373,6 +409,23 @@ public class Vector {
 		return d;
 	}
 
+
+
+	public double get_variance() {
+		double mu = 0;
+		double mu_sq = 0;
+		
+		for(int i = 0 ; i < this.length ; i++) {
+			mu += this.v[i];
+			mu_sq += this.v[i]*this.v[i];
+		}
+		
+		mu_sq /= this.length;
+		mu /= this.length;
+		
+		return mu_sq - mu*mu;
+	}
+	
 	public static Vector random_gaussian_vector(int nb_params) {
 		Vector v = new Vector(nb_params);
 		for(int i = 0 ; i < nb_params ; i++) {
@@ -393,4 +446,5 @@ public class Vector {
 		}
 		return Math.sqrt(s);
 	}
+
 }

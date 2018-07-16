@@ -1,9 +1,7 @@
 package gan;
 
 import layers.Parameters;
-import layers.activations.LeakyReluActivation;
 import layers.activations.ReLUActivation;
-import layers.activations.SigmoidActivation;
 import layers.flat.AffineLayer;
 import layers.flat.DropoutLayer;
 import layers.losses.Loss;
@@ -11,7 +9,6 @@ import layers.losses.SigmoidBinaryEntropyLoss;
 import math.Matrix;
 import math.RandomGenerator;
 import optimizers.RMSOptimizer;
-import optimizers.SGDOptimizer;
 import perceptron.FlatSequential;
 
 public class GenerativeAdversarialNetwork {

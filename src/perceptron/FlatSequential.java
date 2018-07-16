@@ -23,7 +23,7 @@ public class FlatSequential extends FeedForwardNetwork {
 	private ArrayList<FlatLayer> layers;
 	public int last_correct_count = 0;
 	
-	Optimizer opt;
+	public Optimizer opt;
 
 	public void add(FlatLayer l) {
 		layers.add(l);
@@ -92,15 +92,14 @@ public class FlatSequential extends FeedForwardNetwork {
 		return dout;
 	}
 
-	/**
-	 * Effectue une epoch sur des donn�es et des r�f�rences
-	 * @param data donn�es � apprendre
-	 * @param refs labels repr�sentant la v�rit�
-	 */
 	public void train_on_batch(Matrix data, Matrix refs) {
+		train_on_batch_extended(data, refs, 0, data.width/mini_batch, true);
+	}
+
+	public void train_on_batch_extended(Matrix data, Matrix refs, int start, int end, boolean verbose) {
 		
 		if(data.width % mini_batch != 0) {
-			System.err.println("Le nombre de donn�es ne sont pas divisble par mini_batch, "+(data.width%mini_batch)+" donn�es seront ignor�es.");
+			System.err.println("Le nombre de donnees ne sont pas divisble par mini_batch, "+(data.width%mini_batch)+" donn�es seront ignor�es.");
 		}
 		
 		last_average_loss = 0;
@@ -114,19 +113,23 @@ public class FlatSequential extends FeedForwardNetwork {
 		}
 		Collections.shuffle(ints, RandomGenerator.r);
 
-		System.out.print("[");
+		if(verbose) {
+			System.out.print("[");
+		}
 		int tenth = data.width / (mini_batch * 10);
 
 		
-		for (int i = 0; i < data.width / mini_batch; i++) {
+		for (int i = start; i < end; i++) {
 			// Mini batch � utiliser
 			Matrix batch = new Matrix(mini_batch, data.height);
 			// Labels du mini batch
 			Matrix refs_v = new Matrix(mini_batch, refs.height);
 			// Barre de progression
-			if (tenth != 0) {
-				if (i % tenth == 0)
-					System.out.print("=");
+			if(verbose) {
+				if (tenth != 0) {
+					if (i % tenth == 0)
+						System.out.print("=");
+				}
 			}
 			
 			// On g�n�re le mini batch
@@ -155,10 +158,11 @@ public class FlatSequential extends FeedForwardNetwork {
 		last_average_loss /= data.width / mini_batch;
 
 		opt.end_of_epoch();
-		
-		System.out.print("] ");
+		if(verbose) {
+			System.out.print("] ");
+		}
 	}
-
+	
 	public double get_loss(Matrix data, int[] refs, int out_size) {
 		return get_loss(data, Loss.from_int_refs(refs, out_size));
 	}

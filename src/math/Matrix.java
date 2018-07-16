@@ -2,9 +2,12 @@ package math;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -18,7 +21,8 @@ import javax.imageio.ImageIO;
  * une surcouche au dessus d'un double tableau de double.
  */
 public class Matrix {
-	// Axe des lignes, utilisï¿½ pour effectuer une somme sur un seul axe par exemple
+	// Axe des lignes, utilisï¿½ pour effectuer une somme sur un seul axe par
+	// exemple
 	public static final int AXIS_HEIGHT = 0;
 	// Axe des colonnes
 	public static final int AXIS_WIDTH = 1;
@@ -53,7 +57,7 @@ public class Matrix {
 	 *            Matrice ï¿½ copier
 	 */
 	public Matrix(Matrix x) {
-		if(x == null) {
+		if (x == null) {
 			v = new double[0][0];
 			return;
 		}
@@ -187,6 +191,15 @@ public class Matrix {
 		return null;
 	}
 
+	public static void copy(Matrix src, Matrix dst, int start_w, int end_w, int start_h, int end_h, int dst_anchor_x,
+			int dst_anchor_y) {
+		for (int i = start_h; i < end_h; i++) {
+			for (int j = start_w; j < end_w; j++) {
+				dst.v[dst_anchor_y + i - start_h][dst_anchor_x + j - start_w] = src.v[i][j];
+			}
+		}
+	}
+
 	/**
 	 * Effectue le produit scalaire entre une matrice et un vecteur
 	 * 
@@ -216,8 +229,8 @@ public class Matrix {
 	}
 
 	/**
-	 * Vï¿½rifie si cette matrice est ï¿½gal ï¿½ une autre matrice avec une prï¿½cision
-	 * 1e-10
+	 * Vï¿½rifie si cette matrice est ï¿½gal ï¿½ une autre matrice avec une
+	 * prï¿½cision 1e-10
 	 */
 	@Override
 	public boolean equals(Object obj) {
@@ -290,9 +303,9 @@ public class Matrix {
 	}
 
 	/**
-	 * Effectue une multiplication ï¿½lï¿½ment-ï¿½-ï¿½lement de de la matrice actuelle avec
-	 * la nouvelle matrice La multiplication se fait en-place, une nouvelle matrice
-	 * n'est donc pas allouï¿½e
+	 * Effectue une multiplication ï¿½lï¿½ment-ï¿½-ï¿½lement de de la matrice
+	 * actuelle avec la nouvelle matrice La multiplication se fait en-place, une
+	 * nouvelle matrice n'est donc pas allouï¿½e
 	 * 
 	 * @param b
 	 *            matrice ï¿½ multiplier
@@ -362,7 +375,7 @@ public class Matrix {
 		}
 		return Math.sqrt(n);
 	}
-	
+
 	/**
 	 * Renvoie la norme L2 de cette matrice au carré, dï¿½finie par somme(x_ij*x_ij)
 	 */
@@ -437,6 +450,35 @@ public class Matrix {
 		}
 		return res;
 	}
+	// [1.0 1.0] [1.0 1.0]
+	//
+	//
+
+	/**
+	 * Returns a.T b
+	 * 
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	public static Matrix mult_T(Matrix a, Matrix b) {
+		if (b.height != a.height) {
+			throw new RuntimeException("Incompatible shape with (" + a.width + ", " + a.height + ") and (" + b.width
+					+ ", " + b.height + ") " + a.width + " != " + b.height);
+		}
+		Matrix res = new Matrix(b.width, a.width);
+		double sum;
+		for (int j = 0; j < res.height; j++) {
+			for (int i = 0; i < res.width; i++) {
+				sum = 0;
+				for (int k = 0; k < a.height; k++) {
+					sum += a.v[k][j] * b.v[k][i];
+				}
+				res.v[j][i] = sum;
+			}
+		}
+		return res;
+	}
 
 	/**
 	 * Idem que mult, mais utilisant le maximum de processeurs disponibles
@@ -450,7 +492,7 @@ public class Matrix {
 	}
 
 	public static final int threadNumber = Runtime.getRuntime().availableProcessors();
-	
+
 	public static Matrix parralel_mult(Matrix A, Matrix B) {
 		if (B.height != A.width) {
 			throw new RuntimeException(
@@ -459,7 +501,7 @@ public class Matrix {
 		int threadNumber = Matrix.threadNumber;
 		while (A.height % threadNumber != 0)
 			threadNumber--;
-		if(A.shape().min()+B.shape().min() < 50)
+		if (A.shape().min() + B.shape().min() < 50)
 			return A.mult(B);
 		if (threadNumber == 1) {
 			return A.mult(B);
@@ -681,6 +723,32 @@ public class Matrix {
 		}
 		throw new RuntimeException("Incorrect axis : " + axis);
 	}
+	
+	/**
+	 * Effectue la variance de la matrice le long d'un axe
+	 * 
+	 * @param axis
+	 *            axe ï¿½ utiliser
+	 * @return vecteur contenant les rï¿½sultats de chaque variance
+	 */
+	public Vector variance(int axis) {
+		if (axis == AXIS_HEIGHT) {
+			Vector v = new Vector(this.width);
+
+			for (int i = 0; i < this.width; i++) {
+				v.v[i] = this.get_column(i).get_variance();
+			}
+			return v;
+		}
+		if (axis == AXIS_WIDTH) {
+			Vector v = new Vector(this.height);
+			for (int i = 0; i < this.height; i++) {
+				v.v[i] = this.get_row(i).get_variance();
+			}
+			return v;
+		}
+		throw new RuntimeException("Incorrect axis : " + axis);
+	}
 
 	/**
 	 * Renvoie la transposï¿½e de la matrice
@@ -728,8 +796,8 @@ public class Matrix {
 
 	/**
 	 * Permet de visualiser cette matrice sous la forme d'une image, en supposant
-	 * que chaque ï¿½lï¿½ment en hauteur est un filtre, et en mettant ces filtres les
-	 * uns ï¿½ cï¿½tï¿½ des autres.
+	 * que chaque ï¿½lï¿½ment en hauteur est un filtre, et en mettant ces filtres
+	 * les uns ï¿½ cï¿½tï¿½ des autres.
 	 * 
 	 * @param name
 	 *            nom du fichier ï¿½ utiliser pour l'ï¿½criture
@@ -741,11 +809,12 @@ public class Matrix {
 	 *            nombre de filtres en hauteur
 	 * @param write
 	 *            ï¿½crit ou non l'image gï¿½nï¿½rï¿½e
-	 * @param black_and_white 
-	 * 			  genere l'image and utilisant rouge et bleu ou noir et blanc
+	 * @param black_and_white
+	 *            genere l'image and utilisant rouge et bleu ou noir et blanc
 	 * @return l'image gï¿½nï¿½rï¿½e par la fonction
 	 */
-	public BufferedImage visualize(String name, int dimension, int f_w, int f_h, boolean write, boolean black_and_white, boolean is_rgb) {
+	public BufferedImage visualize(String name, int dimension, int f_w, int f_h, boolean write, boolean black_and_white,
+			boolean is_rgb) {
 		if (f_w * f_h != height) {
 			throw new RuntimeException("Dimensions don't match height " + f_w * f_h + " != " + height);
 		}
@@ -761,8 +830,8 @@ public class Matrix {
 					for (int k = 0; k < dimension * scale; k++) {
 						int indice = dimension * (j / scale) + k / scale;
 						int rgb;
-						if(!is_rgb) {
-							if(!black_and_white) {
+						if (!is_rgb) {
+							if (!black_and_white) {
 								int v = (int) (512 * (this.v[im_indice][indice] - min) / (max - min));
 								v -= 256;
 								int a = 0, b = 0;
@@ -770,7 +839,7 @@ public class Matrix {
 									a = -v;
 								else
 									b = v;
-		
+
 								a *= 1.5;
 								b *= 1.5;
 								if (a > 255)
@@ -785,8 +854,9 @@ public class Matrix {
 						} else {
 							int r, g, b;
 							r = (int) (255 * (this.v[im_indice][indice] - min) / (max - min));
-							g = (int) (255 * (this.v[im_indice][indice+dimension*dimension] - min) / (max - min));
-							b = (int) (255 * (this.v[im_indice][indice+dimension*dimension*2] - min) / (max - min));
+							g = (int) (255 * (this.v[im_indice][indice + dimension * dimension] - min) / (max - min));
+							b = (int) (255 * (this.v[im_indice][indice + dimension * dimension * 2] - min)
+									/ (max - min));
 							rgb = (0xFF << 24) + (g << 8) + (r << 16) + b;
 						}
 						bf.setRGB(i2 * dimension * scale + k, i * dimension * scale + j, rgb);
@@ -802,6 +872,63 @@ public class Matrix {
 			}
 		}
 		return bf;
+	}
+
+	public void write_to_file(String name) {
+		try {
+			File f = new File(name+".txt");
+			if(f.exists())
+				f.delete();
+			f.getParentFile().mkdirs();
+			f.createNewFile();
+			PrintWriter pw = new PrintWriter(f);
+
+			pw.write(this.width + " " + this.height + "\n");
+			for (int i = 0; i < this.height; i++) {
+				for (int j = 0; j < this.width; j++) {
+					pw.write(this.v[i][j] + " ");
+				}
+				pw.write('\n');
+			}
+			pw.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static Matrix generate_from_file(String name) throws FileNotFoundException {
+		Scanner sc = new Scanner(new File(name+".txt"));
+		int width = sc.nextInt();
+		int height = sc.nextInt();
+
+		Matrix m = new Matrix(width, height);
+		
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				m.v[i][j] = Double.parseDouble(sc.next());
+			}
+		}
+		sc.close();
+		return m;
+	}
+	
+	public void load_from_file(String name) throws FileNotFoundException {
+		System.out.println(new File(name+".txt").getAbsolutePath());
+		Scanner sc = new Scanner(new File(name+".txt"));
+		int width = sc.nextInt();
+		int height = sc.nextInt();
+
+		assert this.width == width;
+		assert this.height == height;
+		
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < width; j++) {
+				this.v[i][j] = Double.parseDouble(sc.next());
+			}
+		}
+		sc.close();
 	}
 
 	/**
@@ -820,5 +947,66 @@ public class Matrix {
 			}
 		}
 		v = new_v;
+	}
+
+	public Matrix height_concat(Matrix other) {
+		assert (other.width == this.width);
+
+		Matrix m2 = new Matrix(other.width, this.height + other.height);
+
+		for (int i = 0; i < m2.height; i++) {
+			if (i < this.height) {
+				for (int j = 0; j < m2.width; j++) {
+					m2.v[i][j] = this.v[i][j];
+				}
+			} else {
+				for (int j = 0; j < m2.width; j++) {
+					m2.v[i][j] = other.v[i - this.height][j];
+				}
+			}
+		}
+
+		return m2;
+	}
+
+	public Matrix height_concat(Matrix other, int cut) {
+		assert (other.width == this.width);
+		assert (cut <= other.height);
+
+		Matrix m2 = new Matrix(other.width, this.height + cut);
+
+		for (int i = 0; i < m2.height; i++) {
+			if (i < this.height) {
+				for (int j = 0; j < m2.width; j++) {
+					m2.v[i][j] = this.v[i][j];
+				}
+			} else {
+				for (int j = 0; j < m2.width; j++) {
+					m2.v[i][j] = other.v[i - this.height][j];
+				}
+			}
+		}
+
+		return m2;
+	}
+
+	public Matrix height_cut(int start, int end) {
+		assert (start < this.height && end <= this.height);
+		Matrix m2 = new Matrix(this.width, end - start);
+		for (int i = start; i < end; i++) {
+			for (int j = 0; j < m2.width; j++) {
+				m2.v[i - start][j] = this.v[i][j];
+			}
+		}
+		return m2;
+	}
+
+	public Matrix inverse() {
+		for (int j = 0; j < this.height; j++) {
+			for (int i = 0; i < this.width; i++) {
+				this.v[j][i] = 1 / this.v[j][i];
+			}
+		}
+		return this;
 	}
 }

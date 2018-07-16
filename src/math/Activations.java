@@ -23,11 +23,12 @@ public abstract class Activations {
 			for (int j = 0; j < activations.height; j++) {
 				double max = activations.get_row(j).max();
 
-				float expSum = 0;
+				double expSum = 0;
 				for (int i = 0; i < activations.width; i++) {
-					activations.v[j][i] = (float) Math.exp(activations.v[j][i] - max);
+					activations.v[j][i] = Math.exp(activations.v[j][i] - max);
 					expSum += activations.v[j][i];
 				}
+
 				for (int i = 0; i < activations.width; i++) {
 					activations.v[j][i] /= expSum;
 				}
@@ -38,9 +39,9 @@ public abstract class Activations {
 			for (int j = 0; j < activations.width; j++) {
 				double max = activations.get_column(j).max();
 
-				float expSum = 0;
+				double expSum = 0;
 				for (int i = 0; i < activations.height; i++) {
-					activations.v[i][j] = (float) Math.exp(activations.v[i][j] - max);
+					activations.v[i][j] = Math.exp(activations.v[i][j] - max);
 					expSum += activations.v[i][j];
 				}
 				for (int i = 0; i < activations.height; i++) {
